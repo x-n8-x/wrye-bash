@@ -9334,7 +9334,7 @@ class ActorLevels:
 
     def readFromMod(self,modInfo):
         """Imports actor level data from the specified mod and its masters."""
-        mod_id_levels, gotLevels = self.mod_id_levels, self.gotLevels
+        mod_fid_levels, gotLevels = self.mod_id_levels, self.gotLevels
         loadFactory= LoadFactory(False,MreRecord.type_class['NPC_'])
         for modName in (modInfo.header.masters + [modInfo.name]):
             if modName in gotLevels: continue
@@ -9342,20 +9342,20 @@ class ActorLevels:
             modFile.load(True)
             mapper = modFile.getLongMapper()
             for record in modFile.NPC_.getActiveRecords():
-                id_levels = mod_id_levels.setdefault(modName, {})
+                id_levels = mod_fid_levels.setdefault(modName, {})
                 id_levels[mapper(record.fid)] = (record.eid, record.flags.pcLevelOffset and 1 or 0, record.level, record.calcMin, record.calcMax)
             gotLevels.add(modName)
 
     def writeToMod(self,modInfo):
         """Exports actor levels to specified mod."""
-        mod_id_levels = self.mod_id_levels
+        mod_fid_levels = self.mod_id_levels
         loadFactory= LoadFactory(True,MreRecord.type_class['NPC_'])
         modFile = ModFile(modInfo,loadFactory)
         modFile.load(True)
         mapper = modFile.getLongMapper()
 
         changed = 0
-        id_levels = mod_id_levels.get(modInfo.name,mod_id_levels.get(GPath(u'Unknown'),None))
+        id_levels = mod_fid_levels.get(modInfo.name,mod_fid_levels.get(GPath(u'Unknown'),None))
         if id_levels:
             for record in modFile.NPC_.records:
                 fid = mapper(record.fid)
@@ -9365,15 +9365,13 @@ class ActorLevels:
                         (record.level, record.calcMin, record.calcMax) = (level, calcMin, calcMax)
                         record.setChanged()
                         changed += 1
-        #else:
-            #print mod_id_levels
         #--Done
         if changed: modFile.safeSave()
         return changed
 
     def readFromText(self,textPath):
         """Imports NPC level data from specified text file."""
-        mod_id_levels = self.mod_id_levels
+        mod_fid_levels = self.mod_id_levels
         aliases = self.aliases
         with bolt.CsvReader(textPath) as ins:
             for fields in ins:
@@ -9401,12 +9399,12 @@ class ActorLevels:
                     offset = _coerce(offset, int)
                     calcMin = _coerce(calcMin, int)
                     calcMax = _coerce(calcMax, int)
-                id_levels = mod_id_levels.setdefault(source, {})
+                id_levels = mod_fid_levels.setdefault(source, {})
                 id_levels[fid] = (eid, 1, offset, calcMin, calcMax)
 
     def writeToText(self,textPath):
         """Export NPC level data to specified text file."""
-        mod_id_levels = self.mod_id_levels
+        mod_fid_levels = self.mod_id_levels
         headFormat = u'"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"\n'
         rowFormat = u'"%s","%s","%s","0x%06X","%d","%d","%d"'
         extendedRowFormat = u',"%d","%d","%d","%d"\n'
@@ -9414,10 +9412,10 @@ class ActorLevels:
         with textPath.open('w',encoding='utf') as out:
             out.write(headFormat % (_(u'Source Mod'),_(u'Actor Eid'),_(u'Actor Mod'),_(u'Actor Object'),_(u'Offset'),_(u'CalcMin'),_(u'CalcMax'),_(u'Old IsPCLevelOffset'),_(u'Old Offset'),_(u'Old CalcMin'),_(u'Old CalcMax')))
             #Sorted based on mod, then editor ID
-            obId_levels = mod_id_levels[GPath(u'Oblivion.esm')]
-            for mod in sorted(mod_id_levels):
+            obId_levels = mod_fid_levels[GPath(u'Oblivion.esm')]
+            for mod in sorted(mod_fid_levels):
                 if mod.s.lower() == u'oblivion.esm': continue
-                id_levels = mod_id_levels[mod]
+                id_levels = mod_fid_levels[mod]
                 for id in sorted(id_levels,key=lambda k: (k[0].s.lower(),id_levels[k][0].lower())):
                     eid, isOffset, offset, calcMin, calcMax = id_levels[id]
                     if isOffset:
