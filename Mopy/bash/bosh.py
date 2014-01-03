@@ -9328,13 +9328,13 @@ class ActorLevels:
     """Package: Functions for manipulating actor levels."""
     def __init__(self,aliases=None):
         """Initialize."""
-        self.mod_id_levels = {} #--levels = mod_id_levels[mod][longid]
+        self.mod_fid_levels = {} #--levels = mod_fid_levels[mod][longid]
         self.aliases = aliases or {}
         self.gotLevels = set()
 
     def readFromMod(self,modInfo):
         """Imports actor level data from the specified mod and its masters."""
-        mod_fid_levels, gotLevels = self.mod_id_levels, self.gotLevels
+        mod_fid_levels, gotLevels = self.mod_fid_levels, self.gotLevels
         loadFactory= LoadFactory(False,MreRecord.type_class['NPC_'])
         for modName in (modInfo.header.masters + [modInfo.name]):
             if modName in gotLevels: continue
@@ -9348,7 +9348,7 @@ class ActorLevels:
 
     def writeToMod(self,modInfo):
         """Exports actor levels to specified mod."""
-        mod_fid_levels = self.mod_id_levels
+        mod_fid_levels = self.mod_fid_levels
         loadFactory= LoadFactory(True,MreRecord.type_class['NPC_'])
         modFile = ModFile(modInfo,loadFactory)
         modFile.load(True)
@@ -9371,7 +9371,7 @@ class ActorLevels:
 
     def readFromText(self,textPath):
         """Imports NPC level data from specified text file."""
-        mod_fid_levels = self.mod_id_levels
+        mod_fid_levels = self.mod_fid_levels
         aliases = self.aliases
         with bolt.CsvReader(textPath) as ins:
             for fields in ins:
@@ -9404,7 +9404,7 @@ class ActorLevels:
 
     def writeToText(self,textPath):
         """Export NPC level data to specified text file."""
-        mod_fid_levels = self.mod_id_levels
+        mod_fid_levels = self.mod_fid_levels
         headFormat = u'"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"\n'
         rowFormat = u'"%s","%s","%s","0x%06X","%d","%d","%d"'
         extendedRowFormat = u',"%d","%d","%d","%d"\n'
