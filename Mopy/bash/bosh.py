@@ -9416,13 +9416,13 @@ class ActorLevels:
             for mod in sorted(mod_fid_levels):
                 if mod.s.lower() == u'oblivion.esm': continue
                 fid_levels = mod_fid_levels[mod]
-                for id in sorted(fid_levels,key=lambda k: (k[0].s.lower(),fid_levels[k][0].lower())):
-                    eid, isOffset, offset, calcMin, calcMax = fid_levels[id]
+                for fid in sorted(fid_levels,key=lambda k: (k[0].s.lower(),fid_levels[k][0].lower())):
+                    eid, isOffset, offset, calcMin, calcMax = fid_levels[fid]
                     if isOffset:
                         source = mod.s
-                        fidMod, fidObject = id[0].s,id[1]
+                        fidMod, fidObject = fid[0].s,fid[1]
                         out.write(rowFormat % (source, eid, fidMod, fidObject, offset, calcMin, calcMax))
-                        oldLevels = obId_levels.get(id,None)
+                        oldLevels = obId_levels.get(fid,None)
                         if oldLevels:
                             oldEid, wasOffset, oldOffset, oldCalcMin, oldCalcMax = oldLevels
                             out.write(extendedRowFormat % (wasOffset, oldOffset, oldCalcMin, oldCalcMax))
