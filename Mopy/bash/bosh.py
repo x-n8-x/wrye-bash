@@ -9412,7 +9412,7 @@ class ActorLevels:
         with textPath.open('w',encoding='utf') as out:
             out.write(headFormat % (_(u'Source Mod'),_(u'Actor Eid'),_(u'Actor Mod'),_(u'Actor Object'),_(u'Offset'),_(u'CalcMin'),_(u'CalcMax'),_(u'Old IsPCLevelOffset'),_(u'Old Offset'),_(u'Old CalcMin'),_(u'Old CalcMax')))
             #Sorted based on mod, then editor ID
-            obId_levels = mod_fid_levels[GPath(u'Oblivion.esm')]
+            obfid_levels = mod_fid_levels[GPath(u'Oblivion.esm')]
             for mod in sorted(mod_fid_levels):
                 if mod.s.lower() == u'oblivion.esm': continue
                 fid_levels = mod_fid_levels[mod]
@@ -9422,7 +9422,7 @@ class ActorLevels:
                         source = mod.s
                         fidMod, fidObject = fid[0].s,fid[1]
                         out.write(rowFormat % (source, eid, fidMod, fidObject, offset, calcMin, calcMax))
-                        oldLevels = obId_levels.get(fid,None)
+                        oldLevels = obfid_levels.get(fid,None)
                         if oldLevels:
                             oldEid, wasOffset, oldOffset, oldCalcMin, oldCalcMax = oldLevels
                             out.write(extendedRowFormat % (wasOffset, oldOffset, oldCalcMin, oldCalcMax))
