@@ -9359,12 +9359,12 @@ class ActorLevels:
         if fid_levels:
             for record in modFile.NPC_.records:
                 fid = mapper(record.fid)
-                if fid in fid_levels:
-                    eid, isOffset, level, calcMin, calcMax = fid_levels[fid]
-                    if((record.level, record.calcMin, record.calcMax) != (level, calcMin, calcMax)):
-                        (record.level, record.calcMin, record.calcMax) = (level, calcMin, calcMax)
-                        record.setChanged()
-                        changed += 1
+                if fid not in fid_levels: continue
+                eid, isOffset, level, calcMin, calcMax = fid_levels[fid]
+                if((record.level, record.calcMin, record.calcMax) != (level, calcMin, calcMax)):
+                    (record.level, record.calcMin, record.calcMax) = (level, calcMin, calcMax)
+                    record.setChanged()
+                    changed += 1
         #--Done
         if changed: modFile.safeSave()
         return changed
