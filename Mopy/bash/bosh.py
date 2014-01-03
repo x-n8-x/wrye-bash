@@ -9342,8 +9342,8 @@ class ActorLevels:
             modFile.load(True)
             mapper = modFile.getLongMapper()
             for record in modFile.NPC_.getActiveRecords():
-                id_levels = mod_fid_levels.setdefault(modName, {})
-                id_levels[mapper(record.fid)] = (record.eid, record.flags.pcLevelOffset and 1 or 0, record.level, record.calcMin, record.calcMax)
+                fid_levels = mod_fid_levels.setdefault(modName, {})
+                fid_levels[mapper(record.fid)] = (record.eid, record.flags.pcLevelOffset and 1 or 0, record.level, record.calcMin, record.calcMax)
             gotLevels.add(modName)
 
     def writeToMod(self,modInfo):
@@ -9355,12 +9355,12 @@ class ActorLevels:
         mapper = modFile.getLongMapper()
 
         changed = 0
-        id_levels = mod_fid_levels.get(modInfo.name,mod_fid_levels.get(GPath(u'Unknown'),None))
-        if id_levels:
+        fid_levels = mod_fid_levels.get(modInfo.name,mod_fid_levels.get(GPath(u'Unknown'),None))
+        if fid_levels:
             for record in modFile.NPC_.records:
                 fid = mapper(record.fid)
-                if fid in id_levels:
-                    eid, isOffset, level, calcMin, calcMax = id_levels[fid]
+                if fid in fid_levels:
+                    eid, isOffset, level, calcMin, calcMax = fid_levels[fid]
                     if((record.level, record.calcMin, record.calcMax) != (level, calcMin, calcMax)):
                         (record.level, record.calcMin, record.calcMax) = (level, calcMin, calcMax)
                         record.setChanged()
@@ -9399,8 +9399,8 @@ class ActorLevels:
                     offset = _coerce(offset, int)
                     calcMin = _coerce(calcMin, int)
                     calcMax = _coerce(calcMax, int)
-                id_levels = mod_fid_levels.setdefault(source, {})
-                id_levels[fid] = (eid, 1, offset, calcMin, calcMax)
+                fid_levels = mod_fid_levels.setdefault(source, {})
+                fid_levels[fid] = (eid, 1, offset, calcMin, calcMax)
 
     def writeToText(self,textPath):
         """Export NPC level data to specified text file."""
@@ -9415,9 +9415,9 @@ class ActorLevels:
             obId_levels = mod_fid_levels[GPath(u'Oblivion.esm')]
             for mod in sorted(mod_fid_levels):
                 if mod.s.lower() == u'oblivion.esm': continue
-                id_levels = mod_fid_levels[mod]
-                for id in sorted(id_levels,key=lambda k: (k[0].s.lower(),id_levels[k][0].lower())):
-                    eid, isOffset, offset, calcMin, calcMax = id_levels[id]
+                fid_levels = mod_fid_levels[mod]
+                for id in sorted(fid_levels,key=lambda k: (k[0].s.lower(),fid_levels[k][0].lower())):
+                    eid, isOffset, offset, calcMin, calcMax = fid_levels[id]
                     if isOffset:
                         source = mod.s
                         fidMod, fidObject = id[0].s,id[1]
