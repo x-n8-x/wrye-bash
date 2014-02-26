@@ -75,8 +75,21 @@ from operator import attrgetter,itemgetter
 
 #--wxPython
 import wx
-import wx.gizmos
+###MCOW### import wx.gizmos
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
+
+if 'phoenix' in wx.version():
+    PHOENIX = True
+    from wx.adv import SplashScreen as SplashScreen
+    from wx.adv import SPLASH_CENTRE_ON_SCREEN, SPLASH_TIMEOUT, \
+                       SPLASH_NO_TIMEOUT, SPLASH_CENTER_ON_PARENT, \
+                       SPLASH_NO_CENTRE
+else:
+    PHOENIX = False
+    from wx import SplashScreen as SplashScreen
+    from wx import SPLASH_CENTRE_ON_SCREEN, SPLASH_TIMEOUT, \
+                   SPLASH_NO_TIMEOUT, SPLASH_CENTER_ON_PARENT, \
+                   SPLASH_NO_CENTRE
 
 #--Balt
 import balt
@@ -755,12 +768,13 @@ class NotebookPanel(wx.Panel):
         pass
 
 #------------------------------------------------------------------------------
+from wx.lib.mcow import threewaysplitter as TWS
 class SashPanel(NotebookPanel):
     """Subclass of Notebook Panel, designed for two pane panel."""
     def __init__(self,parent,sashPosKey=None,sashGravity=0.5,sashPos=0,mode=wx.VERTICAL,minimumSize=50,style=splitterStyle):
         """Initialize."""
         NotebookPanel.__init__(self, parent, wx.ID_ANY)
-        splitter = wx.gizmos.ThinSplitterWindow(self, wx.ID_ANY, style=style)
+        splitter = wx.SplitterWindow(self, wx.ID_ANY, style=style) ###MCOW### gizmos.Thin
         self.left = wx.Panel(splitter)
         self.right = wx.Panel(splitter)
         if mode == wx.VERTICAL:
@@ -838,17 +852,17 @@ class List(wx.Panel):
         self.sortDirty = 0
         self.PopulateItems()
         #--Events
-        wx.EVT_SIZE(self, self.OnSize)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
         #--Events: Items
         self.hitIcon = 0
-        wx.EVT_LEFT_DOWN(self.list,self.OnLeftDown)
+        self.list.Bind(wx.EVT_LEFT_DOWN,self.OnLeftDown)
         self.list.Bind(wx.EVT_CONTEXT_MENU, self.DoItemMenu)
         #--Events: Columns
-        wx.EVT_LIST_COL_CLICK(self, listId, self.DoItemSort)
-        wx.EVT_LIST_COL_RIGHT_CLICK(self, listId, self.DoColumnMenu)
+        self.Bind(wx.EVT_LIST_COL_CLICK, self.DoItemSort, id=listId)
+        self.Bind(wx.EVT_LIST_COL_RIGHT_CLICK, self.DoColumnMenu, id=listId)
         self.checkcol = []
-        wx.EVT_LIST_COL_END_DRAG(self,listId, self.OnColumnResize)
-        wx.EVT_UPDATE_UI(self, listId, self.onUpdateUI)
+        self.Bind(wx.EVT_LIST_COL_END_DRAG, self.OnColumnResize, id=listId)
+        self.Bind(wx.EVT_UPDATE_UI, self.onUpdateUI, id=listId)
         #--Mouse movement
         self.list.Bind(wx.EVT_MOTION,self.OnMouse)
         self.list.Bind(wx.EVT_LEAVE_WINDOW,self.OnMouse)
@@ -1088,7 +1102,7 @@ class List(wx.Panel):
             self.colWidths[colName] = width
             self.checkcol = []
         event.Skip()
-        
+
     def OnMouse(self,event):
         """Check mouse motion to detect right click event."""
         if event.Moving():
@@ -1123,7 +1137,7 @@ class List(wx.Panel):
         column is being edited and process after in OnUpdateUI()"""
         self.checkcol = [event.GetColumn()]
         event.Skip()
-        
+
     #--Item Sort
     def DoItemSort(self, event):
         self.PopulateItems(self.cols[event.GetColumn()],-1)
@@ -1139,7 +1153,10 @@ class List(wx.Panel):
 
     #--Size Change
     def OnSize(self, event):
-        size = self.GetClientSizeTuple()
+        if PHOENIX:
+            size = self.GetClientSize()
+        else: # CLASSIC
+            size = self.GetClientSizeTuple()
         #print self,size
         self.list.SetSize(size)
 
@@ -1184,7 +1201,7 @@ class MasterList(List):
         self.itemMenu = MasterList.itemMenu
         #--Parent init
         List.__init__(self,parent,wx.ID_ANY,ctrlStyle=(wx.LC_REPORT|wx.LC_SINGLE_SEL|wx.LC_EDIT_LABELS))
-        wx.EVT_LIST_END_LABEL_EDIT(self,self.listId,self.OnLabelEdited)
+        self.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnLabelEdited, id=self.listId)
         #--Image List
         checkboxesIL = self.checkboxes.GetImageList()
         self.list.SetImageList(checkboxesIL,wx.IMAGE_LIST_SMALL)
@@ -1506,10 +1523,16 @@ class INIList(List):
                 value = fileName.s
             elif col == 'Installer':
                 value = self.data.table.getItem(fileName, 'installer', u'')
-            if mode and colDex == 0:
-                self.list.InsertStringItem(itemDex, value)
-            else:
-                self.list.SetStringItem(itemDex, colDex, value)
+            if PHOENIX:
+                if mode and colDex == 0:
+                    self.list.InsertItem(itemDex, value)
+                else:
+                    self.list.SetItem(itemDex, colDex, value)
+            else: #CLASSIC
+                if mode and colDex == 0:
+                    self.list.InsertStringItem(itemDex, value)
+                else:
+                    self.list.SetStringItem(itemDex, colDex, value)
         status = fileInfo.getStatus()
         #--Image
         checkMark = 0
@@ -1697,10 +1720,16 @@ class INILineCtrl(wx.ListCtrl):
             with bosh.iniInfos.ini.path.open('r') as ini:
                 lines = ini.readlines()
                 for i,line in enumerate(lines):
-                    if i >= num:
-                        self.InsertStringItem(i, line.rstrip())
-                    else:
-                        self.SetStringItem(i, 0, line.rstrip())
+                    if PHOENIX:
+                        if i >= num:
+                            self.InsertItem(i, line.rstrip())
+                        else:
+                            self.SetItem(i, 0, line.rstrip())
+                    else: # CLASSIC
+                        if i >= num:
+                            self.InsertStringItem(i, line.rstrip())
+                        else:
+                            self.SetStringItem(i, 0, line.rstrip())
                 for i in xrange(len(lines), num):
                     self.DeleteItem(len(lines))
         except IOError:
@@ -1745,7 +1774,7 @@ class ModList(List):
         self.sm_dn = checkboxesIL.Add(balt.SmallDnArrow.GetBitmap())
         self.list.SetImageList(checkboxesIL,wx.IMAGE_LIST_SMALL)
         #--Events
-        wx.EVT_LIST_ITEM_SELECTED(self,self.listId,self.OnItemSelected)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED,self.OnItemSelected,id=self.listId)
         self.list.Bind(wx.EVT_CHAR, self.OnChar)
         self.list.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.list.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
@@ -1845,10 +1874,16 @@ class ModList(List):
             else:
                 value = u'-'
             #--Insert/SetString
-            if mode and (colDex == 0):
-                self.list.InsertStringItem(itemDex, value)
-            else:
-                self.list.SetStringItem(itemDex, colDex, value)
+            if PHOENIX:
+                if mode and (colDex == 0):
+                    self.list.InsertItem(itemDex, value)
+                else:
+                    self.list.SetItem(itemDex, colDex, value)
+            else: # CLASSIC
+                if mode and (colDex == 0):
+                    self.list.InsertStringItem(itemDex, value)
+                else:
+                    self.list.SetStringItem(itemDex, colDex, value)
         #--Default message
         mouseText = u''
         #--Image
@@ -1984,7 +2019,7 @@ class ModList(List):
             active = set(selected) | bosh.modInfos.imported | bosh.modInfos.merged
             self.items.sort(key=lambda x: x not in active)
         #set column sort image
-        try: 
+        try:
             try: self.list.ClearColumnImage(self.colDict[oldcol])
             except: pass # if old column no longer is active this will fail but not a problem since it doesn't exist anyways.
             if reverse: self.list.SetColumnImage(self.colDict[col], self.sm_up)
@@ -2087,11 +2122,12 @@ class ModList(List):
             docBrowser.SetMod(modName)
 
 #------------------------------------------------------------------------------
+
 class ModDetails(SashPanel):
     """Details panel for mod tab."""
 
     def __init__(self,parent):
-        SashPanel.__init__(self, parent,'bash.mods.details.SashPos',1.0,mode=wx.HORIZONTAL,minimumSize=150,style=wx.SW_BORDER|splitterStyle)
+        SashPanel.__init__(self, parent,'bash.mods.details.SashPos',1.0,mode=wx.HORIZONTAL,minimumSize=150,style=splitterStyle) ###MCOW### wx.SW_BORDER|
         top,bottom = self.left, self.right
         #--Singleton
         global modDetails
@@ -2113,22 +2149,22 @@ class ModDetails(SashPanel):
             id = self.authorId = wx.NewId()
             self.author = textCtrl(top,id)#,size=(textWidth,-1))
             self.author.SetMaxLength(512)
-            wx.EVT_KILL_FOCUS(self.author,self.OnEditAuthor)
-            wx.EVT_TEXT(self.author,id,self.OnTextEdit)
+            self.author.Bind(wx.EVT_KILL_FOCUS, self.OnEditAuthor)
+            self.author.Bind(wx.EVT_TEXT,self.OnTextEdit, id=id) ###MCOW### Warning id=id no-no
             #--Modified
             id = self.modifiedId = wx.NewId()
             self.modified = textCtrl(top,id,size=(textWidth,-1))
             self.modified.SetMaxLength(32)
-            wx.EVT_KILL_FOCUS(self.modified,self.OnEditModified)
-            wx.EVT_TEXT(self.modified,id,self.OnTextEdit)
+            self.modified.Bind(wx.EVT_KILL_FOCUS,self.OnEditModified)
+            self.modified.Bind(wx.EVT_TEXT,self.OnTextEdit, id=id) ###MCOW### Warning id=id no-no
             #--Description
             id = self.descriptionId = wx.NewId()
             self.description = (
                 wx.TextCtrl(top,id,u'',size=(textWidth,150),style=wx.TE_MULTILINE))
             self.description.SetMaxLength(512)
-            wx.EVT_KILL_FOCUS(self.description,self.OnEditDescription)
-            wx.EVT_TEXT(self.description,id,self.OnTextEdit)
-            subSplitter = self.subSplitter = wx.gizmos.ThinSplitterWindow(bottom,style=splitterStyle)
+            self.description.Bind(wx.EVT_KILL_FOCUS,self.OnEditDescription)
+            self.description.Bind(wx.EVT_TEXT,self.OnTextEdit, id=id) ###MCOW### Warning id=id no-no
+            subSplitter = self.subSplitter = wx.SplitterWindow(bottom,style=splitterStyle) ###MCOW### gizmos.Thin
             masterPanel = wx.Panel(subSplitter)
             tagPanel = wx.Panel(subSplitter)
             #--Masters
@@ -2181,9 +2217,9 @@ class ModDetails(SashPanel):
         bottom.SetSizer(vSizer((subSplitter,1,wx.EXPAND)))
         #--Events
         self.gTags.Bind(wx.EVT_CONTEXT_MENU,self.ShowBashTagsMenu)
-        wx.EVT_MENU(self,ID_TAGS.AUTO,self.DoAutoBashTags)
-        wx.EVT_MENU(self,ID_TAGS.COPY,self.DoCopyBashTags)
-        wx.EVT_MENU_RANGE(self, ID_TAGS.BASE, ID_TAGS.MAX, self.ToggleBashTag)
+        self.Bind(wx.EVT_MENU, self.DoAutoBashTags, id=ID_TAGS.AUTO)
+        self.Bind(wx.EVT_MENU, self.DoCopyBashTags, id=ID_TAGS.COPY)
+        self.Bind(wx.EVT_MENU_RANGE, self.ToggleBashTag, id=ID_TAGS.BASE, id2=ID_TAGS.MAX)
 
     def SetFile(self,fileName='SAME'):
         #--Reset?
@@ -2474,7 +2510,7 @@ class INIPanel(SashPanel):
         self.list = iniList
         self.comboBox = balt.comboBox(right,wx.ID_ANY,value=self.GetChoiceString(),choices=self.sortKeys,style=wx.CB_READONLY)
         #--Events
-        wx.EVT_SIZE(self,self.OnSize)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
         self.comboBox.Bind(wx.EVT_COMBOBOX,self.OnSelectDropDown)
         iniList.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnSelectTweak)
         #--Layout
@@ -2711,7 +2747,7 @@ class ModPanel(SashPanel):
         self.modDetails = ModDetails(right)
         modList.details = self.modDetails
         #--Events
-        wx.EVT_SIZE(self,self.OnSize)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
         #--Layout
         right.SetSizer(hSizer((self.modDetails,1,wx.EXPAND)))
         left.SetSizer(hSizer((modList,2,wx.EXPAND)))
@@ -2769,7 +2805,7 @@ class SaveList(List):
         self.list.SetImageList(checkboxesIL,wx.IMAGE_LIST_SMALL)
         #--Events
         self.list.Bind(wx.EVT_CHAR, self.OnChar)
-        wx.EVT_LIST_ITEM_SELECTED(self,self.listId,self.OnItemSelected)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED,self.OnItemSelected, id=self.listId)
         self.list.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
         self.list.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginEditLabel)
         self.list.Bind(wx.EVT_LIST_END_LABEL_EDIT, self.OnEditLabel)
@@ -2949,7 +2985,7 @@ class SaveDetails(SashPanel):
     """Savefile details panel."""
     def __init__(self,parent):
         """Initialize."""
-        SashPanel.__init__(self, parent,'bash.saves.details.SashPos',0.0,sashPos=230,mode=wx.HORIZONTAL,minimumSize=230,style=wx.SW_BORDER|splitterStyle)
+        SashPanel.__init__(self, parent,'bash.saves.details.SashPos',0.0,sashPos=230,mode=wx.HORIZONTAL,minimumSize=230,style=splitterStyle) ###MCOW### wx.SW_BORDER|
         top,bottom = self.left, self.right
         readOnlyColour = self.GetBackgroundColour()
         #--Singleton
@@ -2963,14 +2999,14 @@ class SaveDetails(SashPanel):
         id = self.fileId = wx.NewId()
         self.file = wx.TextCtrl(top,id,u'',size=(textWidth,-1))
         self.file.SetMaxLength(256)
-        wx.EVT_KILL_FOCUS(self.file,self.OnEditFile)
-        wx.EVT_TEXT(self.file,id,self.OnTextEdit)
+        self.file.Bind(wx.EVT_KILL_FOCUS, self.OnEditFile)
+        self.file.Bind(wx.EVT_TEXT, self.OnTextEdit, id=id) ###MCOW### id=id no-no
         #--Player Info
         self.playerInfo = staticText(top,u" \n \n ")
         self.gCoSaves = staticText(top,u'--\n--')
         #--Picture
         self.picture = balt.Picture(top,textWidth,192*textWidth/256,style=wx.BORDER_SUNKEN,background=colors['screens.bkgd.image']) #--Native: 256x192
-        subSplitter = self.subSplitter = wx.gizmos.ThinSplitterWindow(bottom,style=splitterStyle)
+        subSplitter = self.subSplitter = wx.SplitterWindow(bottom,style=splitterStyle) ###MCOW### gizmos.Thin
         masterPanel = wx.Panel(subSplitter)
         notePanel = wx.Panel(subSplitter)
         #--Masters
@@ -3163,7 +3199,7 @@ class SavePanel(SashPanel):
         self.saveDetails = SaveDetails(right)
         saveList.details = self.saveDetails
         #--Events
-        wx.EVT_SIZE(self,self.OnSize)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
         #--Layout
         right.SetSizer(hSizer((self.saveDetails,1,wx.EXPAND)))
         left.SetSizer(hSizer((saveList,2,wx.EXPAND)))
@@ -3619,9 +3655,9 @@ class InstallersPanel(SashTankPanel):
         data = bosh.InstallersData()
         SashTankPanel.__init__(self,data,parent)
         left,right = self.left,self.right
-        commentsSplitter = wx.gizmos.ThinSplitterWindow(right, style=splitterStyle)
-        subSplitter = wx.gizmos.ThinSplitterWindow(commentsSplitter, style=splitterStyle)
-        checkListSplitter = wx.gizmos.ThinSplitterWindow(subSplitter, style=splitterStyle)
+        commentsSplitter = wx.SplitterWindow(right, style=splitterStyle) ###MCOW### gizmos.Thin
+        subSplitter = wx.SplitterWindow(commentsSplitter, style=splitterStyle) ###MCOW### gizmos.Thin
+        checkListSplitter = wx.SplitterWindow(subSplitter, style=splitterStyle) ###MCOW### gizmos.Thin
         #--Refreshing
         self.refreshed = False
         self.refreshing = False
@@ -3726,7 +3762,7 @@ class InstallersPanel(SashTankPanel):
             event = wx.CommandEvent()
             event.SetEventType(wx.EVT_MOUSE_CAPTURE_LOST.typeId)
             wx.PostEvent(self.GetEventHandler(), event)
-            
+
             settings['bash.installers.isFirstRun'] = False
             message = (_(u'Do you want to enable Installers?')
                        + u'\n\n\t' +
@@ -3876,15 +3912,15 @@ class InstallersPanel(SashTankPanel):
         splitter = event.GetEventObject()
         sashPos = splitter.GetSashPosition() - splitter.GetSize()[1]
         settings['bash.installers.commentsSplitterSashPos'] = sashPos
-    
+
     def _onMouseCaptureLost(self, event):
         """Handle the onMouseCaptureLost event
-        
+
         Currently does nothing, but is necessary because without it the first run dialog in OnShow will throw an exception.
-        
+
         """
         pass
-    
+
     #--Details view (if it exists)
     def SaveDetails(self):
         """Saves details if they need saving."""
@@ -4155,7 +4191,7 @@ class ScreensList(List):
         #--Parent init
         List.__init__(self,parent,-1,ctrlStyle=(wx.LC_REPORT|wx.SUNKEN_BORDER|wx.LC_EDIT_LABELS))
         #--Events
-        wx.EVT_LIST_ITEM_SELECTED(self,self.listId,self.OnItemSelected)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, id=self.listId)
         self.list.Bind(wx.EVT_CHAR, self.OnChar)
         self.list.Bind(wx.EVT_KEY_UP, self.OnKeyUp)
         self.list.Bind(wx.EVT_LIST_BEGIN_LABEL_EDIT, self.OnBeginEditLabel)
@@ -5057,10 +5093,10 @@ class ModBasePanel(SashTankPanel):
         self.detailsItem = item
 
 #------------------------------------------------------------------------------
-class BashNotebook(wx.Notebook, balt.TabDragMixin):
+class BashNotebook(wx.Notebook): #balt.TabDragMixin
     def __init__(self, parent, id):
         wx.Notebook.__init__(self, parent, id)
-        balt.TabDragMixin.__init__(self)
+        # balt.TabDragMixin.__init__(self)
         #--Pages
         # Ensure the 'Mods' tab is always shown
         if 'Mods' not in settings['bash.tabs.order']:
@@ -5150,7 +5186,7 @@ class BashNotebook(wx.Notebook, balt.TabDragMixin):
             bolt.GPathPurge()
             self.GetPage(event.GetSelection()).OnShow()
             event.Skip()
- 
+
     def _onMouseCaptureLost(self, event):
         """Handle the onMouseCaptureLost event
         Currently does nothing, but is necessary because without it the first run dialog in OnShow will throw an exception.
@@ -5169,13 +5205,15 @@ class BashStatusBar(wx.StatusBar):
         self.SetFieldsCount(3)
         self.UpdateIconSizes()
         #--Bind events
-        wx.EVT_SIZE(self,self.OnSize)
+        self.Bind(wx.EVT_SIZE,self.OnSize)
         #--Clear text notice
         self.Bind(wx.EVT_TIMER, self.OnTimer)
         #--Setup Drag-n-Drop reordering
         self.dragging = wx.NOT_FOUND
         self.dragStart = 0
         self.moved = False
+
+        self.SetMinHeight(48)
 
     def _addButton(self,link):
         gButton = link.GetBitmapButton(self,style=wx.NO_BORDER)
@@ -5372,12 +5410,13 @@ class BashStatusBar(wx.StatusBar):
         event.Skip()
 
     def OnSize(self,event=None):
-        rect = self.GetFieldRect(0)
-        (xPos,yPos) = (rect.x+4,rect.y+2)
-        for button in self.buttons:
-            button.SetPosition((xPos,yPos))
-            xPos += self.size
-        if event: event.Skip()
+        ###MCOW### rect = self.GetFieldRect(0)
+        ###MCOW### (xPos,yPos) = (rect.x+4,rect.y+2)
+        ###MCOW### for button in self.buttons:
+        ###MCOW###     button.SetPosition((xPos,yPos))
+        ###MCOW###     xPos += self.size
+        if event:
+            event.Skip()
 
     def SetText(self,text=u'',timeout=5):
         """Set's display text as specified. Empty string clears the field."""
@@ -5481,7 +5520,8 @@ class BashFrame(wx.Frame):
                 title += _(u'Default')
             if bosh.modInfos.voCurrent:
                 title += u' ['+bosh.modInfos.voCurrent+u']'
-        wx.Frame.SetTitle(self,title)
+        # wx.Frame.SetTitle(self,title) ###MCOW### TEMP
+        wx.Frame.SetTitle(self, title + ' wxPython %s' % wx.version())
 
     def SetStatusCount(self):
         """Sets the status bar count field. Actual work is done by current panel."""
@@ -5701,8 +5741,12 @@ class BashFrame(wx.Frame):
         self.CleanSettings()
         if docBrowser: docBrowser.DoSave()
         if not (self.IsIconized() or self.IsMaximized()):
-            settings['bash.framePos'] = self.GetPositionTuple()
-            settings['bash.frameSize'] = self.GetSizeTuple()
+            if PHOENIX:
+                settings['bash.framePos'] = self.GetPosition()
+                settings['bash.frameSize'] = self.GetSize()
+            else: #CLASSIC
+                settings['bash.framePos'] = self.GetPositionTuple()
+                settings['bash.frameSize'] = self.GetSizeTuple()
         settings['bash.frameMax'] = self.IsMaximized()
         settings['bash.page'] = self.notebook.GetSelection()
         for index in range(self.notebook.GetPageCount()):
@@ -6156,7 +6200,7 @@ class DocBrowser(wx.Frame):
     def GetIsWtxt(self,docPath=None):
         """Determines whether specified path is a wtxt file."""
         docPath = docPath or GPath(self.data.get(self.modName,u''))
-        if not docPath.exists(): 
+        if not docPath.exists():
             return False
         try:
             with docPath.open('r',encoding='utf-8-sig') as textFile:
@@ -6367,8 +6411,12 @@ class DocBrowser(wx.Frame):
         self.DoSave()
         settings['bash.modDocs.show'] = False
         if not self.IsIconized() and not self.IsMaximized():
-            settings['bash.modDocs.pos'] = self.GetPositionTuple()
-            settings['bash.modDocs.size'] = self.GetSizeTuple()
+            if PHOENIX:
+                settings['bash.modDocs.pos'] = self.GetPosition()
+                settings['bash.modDocs.size'] = self.GetSize()
+            else: #CLASSIC
+                settings['bash.modDocs.pos'] = self.GetPositionTuple()
+                settings['bash.modDocs.size'] = self.GetSizeTuple()
         global docBrowser
         docBrowser = None
         self.Destroy()
@@ -6507,8 +6555,12 @@ class ModChecker(wx.Frame):
         """Handle window close event.
         Remember window size, position, etc."""
         if not self.IsIconized() and not self.IsMaximized():
-            settings['bash.modChecker.pos'] = self.GetPositionTuple()
-            settings['bash.modChecker.size'] = self.GetSizeTuple()
+            if PHOENIX:
+                settings['bash.modChecker.pos'] = self.GetPosition()
+                settings['bash.modChecker.size'] = self.GetSize()
+            else: #CLASSIC
+                settings['bash.modChecker.pos'] = self.GetPositionTuple()
+                settings['bash.modChecker.size'] = self.GetSizeTuple()
         self.Destroy()
 
 #------------------------------------------------------------------------------
@@ -6526,7 +6578,7 @@ def GetBashVersion():
     #return settings['bash.readme'] #readme file not found or not changed
 
 #------------------------------------------------------------------------------
-class WryeBashSplashScreen(wx.SplashScreen):
+class WryeBashSplashScreen(SplashScreen):
     """This Creates the Splash Screen widget. (The first image you see when starting the Application.)"""
     def __init__(self, parent=None):
         splashScreenBitmap = wx.Image(name = bosh.dirs['images'].join(u'wryesplash.png').s).ConvertToBitmap()
@@ -6534,7 +6586,7 @@ class WryeBashSplashScreen(wx.SplashScreen):
         # image will stay until clicked by user or is explicitly destroyed when the main window is ready
         # alternately wx.SPLASH_TIMEOUT and a duration can be used, but then you have to guess how long it should last
         splashDuration = 3500 # Duration in ms the splash screen will be visible (only used with the TIMEOUT option)
-        wx.SplashScreen.__init__(self, splashScreenBitmap, splashStyle, splashDuration, parent)
+        SplashScreen.__init__(self, splashScreenBitmap, splashStyle, splashDuration, parent)
         self.Bind(wx.EVT_CLOSE, self.OnExit)
         wx.Yield()
 
@@ -7262,10 +7314,10 @@ class PatchDialog(wx.Dialog):
             self.gPatchers.Check(index,False)
             patcher.isEnabled = False
             if patcher.getName() in [_(u'Leveled Lists'),_(u"Alias Mod Names")]: continue # special case that one.
-            if hasattr(patcher, 'gList'): 
+            if hasattr(patcher, 'gList'):
                 patcher.gList.SetChecked([])
                 patcher.OnListCheck()
-            if hasattr(patcher, 'gTweakList'): 
+            if hasattr(patcher, 'gTweakList'):
                 patcher.gTweakList.SetChecked([])
         self.gExecute.Enable(False)
 
@@ -7953,7 +8005,7 @@ class DoublePatcher(TweakPatcher,ListPatcher):
         self.SetItems(self.getAutoItems())
         self.SetTweaks()
         return gConfigPanel
-       
+
 #------------------------------------------------------------------------------
 # Patchers 10 ------------------------------------------------------------------
 class PatchMerger(bosh.PatchMerger,ListPatcher):
@@ -9104,7 +9156,7 @@ class Installers_ConflictsReportShowBSAConflicts(BoolLink):
                           _(u'Show BSA Conflicts'),
                           'bash.installers.conflictsReport.showBSAConflicts',
                           )
-        
+
     def Execute(self,event):
         BoolLink.Execute(self, event)
         self.gTank.RefreshUI()
@@ -10113,7 +10165,7 @@ class Installer_CopyConflicts(InstallerLink):
                             srcFull = bosh.dirs['installers'].join(srcArchive,src)
                             destFull = bosh.dirs['installers'].join(destDir,GPath(srcArchive.s),src)
                             if srcFull.exists():
-                                progress(curFile,srcArchive.s+u'\n'+_(u'Copying files...')+u'\n'+src)
+                                progress(curFile,srcArchive.s+u'\n'+_(u'Copying files...')+u'\n'++src)
                                 srcFull.copyTo(destFull)
                                 curFile += 1
                     else:
@@ -11884,7 +11936,7 @@ class Settings_Language(Link):
         u'russian': _(u'Russian') + u' (ру́сский язы́к)',
         u'english': _(u'English') + u' (English)',
         }
-        
+
     def __init__(self,language):
         Link.__init__(self)
         self.language = language

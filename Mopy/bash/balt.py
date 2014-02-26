@@ -38,7 +38,14 @@ import sys
 import os
 import textwrap
 import time
+import wxversion
+# wxversion.select('2.8-msw-unicode')
+# wxversion.select('2.9.4-msw')
+# wxversion.select('2.9.5-msw')
+# wxversion.select('3.0-msw')
+wxversion.select('3.0.1-phoenix')
 import wx
+print wx.version()
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
 from wx.lib.embeddedimage import PyEmbeddedImage
 import wx.lib.newevent
@@ -320,10 +327,13 @@ class comboBox(wx.ComboBox):
             self.Bind(wx.EVT_TEXT, self.OnChange)
 
     def OnChange(self, event):
-        if self.GetClientSize()[0] < self.GetTextExtent(self.GetValue())[0]+30:
-            self.SetToolTip(tooltip(self.GetValue()))
-        else:
-            self.SetToolTip(tooltip(u''))
+        try:
+            if self.GetClientSize()[0] < self.GetTextExtent(self.GetValue())[0]+30:
+                self.SetToolTip(tooltip(self.GetValue()))
+            else:
+                self.SetToolTip(tooltip(u''))
+        except RuntimeError: # Bash is closing... wrapped C/C++ object of type combobox has been deleted.
+            pass
         event.Skip()
 
 def bitmapButton(parent,bitmap,pos=defPos,size=defSize,style=wx.BU_AUTODRAW,val=defVal,
