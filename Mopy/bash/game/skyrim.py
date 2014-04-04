@@ -1880,413 +1880,687 @@ class RecordHeader(brec.BaseRecordHeader):
             return struct.pack('=4s5I',self.recType,self.size,self.flags1,
                                self.fid,self.flags2,self.extra)
 
-# Record Elements --------------------------------------------------------------
-#-------------------------------------------------------------------------------
+# Record Elements -------------------------------------------------------------
+#------------------------------------------------------------------------------
 class MelVmad(MelBase):
     """Virtual Machine data (VMAD)"""
-    # Maybe use this later for better access to Fid,Aid pairs?
-    ##ObjectRef = collections.namedtuple('ObjectRef',['fid','aid'])
-    class FragmentInfo(object):
-        __slots__ = ('unk','fileName',)
-        def __init__(self):
-            self.unk = 0
-            self.fileName = u''
 
-        def loadData(self,ins,Type,readId):
-            if Type == 'INFO':
-                raise Exception(u"Fragment Scripts for 'INFO' records are not implemented.")
-            elif Type == 'PACK':
-                self.unk,count = ins.unpack('=bB',2,readId)
-                self.fileName = ins.readString16(-1,readId)
-                count = bin(count).count('1')
-            elif Type == 'PERK':
-                self.unk, = ins.unpack('=b',1,readId)
-                self.fileName = ins.readString16(-1,readId)
-                count, = ins.unpack('=H',2,readId)
-            elif Type == 'QUST':
-                self.unk,count = ins.unpack('=bH',3,readId)
-                self.fileName = ins.readString16(-1,readId)
-            elif Type == 'SCEN':
-                raise Exception(u"Fragment Scripts for 'SCEN' records are not implemented.")
-            else:
-                raise Exception(u"Unexpected Fragment Scripts for record type '%s'." % Type)
-            return count
+    # So object references can be accessed by index or name
+    ObjectRef = collections.namedtuple('ObjectRef', ['fid', 'aid'])
 
-        def dumpData(self,Type,count):
+    # Flags ------------------------------------------------------------------
+    scriptStatusFlags = bolt.Flags(0L, bolt.Flags.getNames(
+        # 0x00 - local
+        (0, 'inherited'), # 0x01 - inherited
+        (1, 'removed'),   # 0x02 - removed
+        ))
+    propertyStatusFlags = bolt.Flags(0L, bolt.Flags.getNames(
+        (0, 'edited'),   # 0x01 - edited
+        (1, 'removed'),  # 0x02 - removed (always accompanied by 'edited')
+        ))
+    packFragmentFlags = bolt.Flags(0L, bolt.Flags.getNames(
+        (0, 'onBegin'),  # 0x01 - has onBegin fragment
+        (1, 'onEnd'),    # 0x02 - has onEnd fragment
+        (2, 'onChange'), # 0x04 - has onChange fragment
+        ))
+    scenFragmentFlags = bolt.Flags(0L, bolt.Flags.getNames(
+        (0, 'onBegin'),  # 0x01 - has/is onBegin fragment
+        (1, 'onEnd'),    # 0x02 - has/is onEnd fragment
+        ))
+
+    # Fragments --------------------------------------------------------------
+    class FragmentBasic(object):
+        """Fragment used by:
+            - SCEN begin/end fragments
+            - PACK fragments
+            - INFO fragments
+        """
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('unk', 'scriptName', 'fragmentName')
+            setter = record.__setattr__
+            unk, = ins.unpack('=b', 1, readId)
+            setter('unk', unk)
+            setter('scriptName', ins.readString16(-1, readId))
+            setter('fragmentName', ins.readString16(-1, readId))
+
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
             structPack = struct.pack
-            fileName = _encode(self.fileName)
-            if Type == 'INFO':
-                raise Exception(u"Fragment Scripts for 'INFO' records are not implemented.")
-            elif Type == 'PACK':
-                # TODO: check if this is right!
-                count = int(count*'1',2)
-                data = structPack('=bBH',self.unk,count,len(fileName)) + fileName
-            elif Type == 'PERK':
-                data = structPack('=bH',self.unk,len(fileName)) + fileName
-                data += structPack('=H',count)
-            elif Type == 'QUST':
-                data = structPack('=bHH',self.unk,count,len(fileName)) + fileName
-            elif Type == 'SCEN':
-                raise Exception(u"Fragment Scripts for 'SCEN' records are not implemented.")
-            else:
-                raise Exception(u"Unexpected Fragment Scripts for record type '%s'." % Type)
+            unk = getter('unk')
+            scriptName = getter('scriptName')
+            fragmentName = getter('fragmentName')
+            # unk, scriptNameLen
+            data = structPack('=bH', unk, len(scriptName))
+            # scriptName
+            data += scriptName
+            # fragmentName
+            data += structPack('=H', len(fragmentName))
+            data += fragmentName
             return data
 
-    class INFOFragment(object):
-        pass
+    class FragmentPERK(object):
+        """Fragment used by PERK records"""
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('index', 'unk1', 'unk2',
+                                'scriptName', 'fragmentName')
+            setter = record.__setattr__
+            index, unk1, unk2 = ins.unpack('=Hhb', 5, readId)
+            setter('index', index)
+            setter('unk1', unk1)
+            setter('unk2', unk2)
+            setter('scriptName', ins.readString16(-1, readId))
+            setter('fragmentName', ins.readString16(-1, readId))
 
-    class PACKFragment(object):
-        __slots__ = ('unk','scriptName','fragmentName',)
-        def __init__(self):
-            self.unk = 0
-            self.scriptName = u''
-            self.fragmentName = u''
-
-        def loadData(self,ins,readId):
-            self.unk = ins.unpack('=b',1,readId)
-            self.scriptName = ins.readString16(-1,readId)
-            self.fragmentName = ins.readString16(-1,readId)
-
-        def dumpData(self):
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
             structPack = struct.pack
-            scriptName = _encode(self.scriptName)
-            fragmentName = _encode(self.fragmentName)
-            data = structPack('=bH',self.unk,len(scriptName)) + scriptName
-            data += structPack('=H',len(fragmentName)) + fragmentName
+            # index, unk1, unk2
+            data = structPack('=Hhb', *[getter(attr) for attr in
+                              ('index', 'unk1', 'unk2')])
+            # scriptName
+            scriptName = getter('scriptName')
+            data += structPack('=H', len(scriptName))
+            data += scriptName
+            # fragmentName
+            fragmentName = getter('fragmentName')
+            data += structPack('=H', len(fragmentName))
+            data += fragmentName
             return data
 
-    class PERKFragment(object):
-        __slots__ = ('index','unk1','unk2','scriptName','fragmentName',)
-        def __init__(self):
-            self.index = -1
-            self.unk1 = 0
-            self.unk2 = 0
-            self.scriptName = u''
-            self.fragmentName= u''
+    class FragmentQUST(object):
+        """Fragment used by QUST records"""
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('stage', 'unk1', 'index', 'unk2',
+                                'scriptName', 'fragmentName')
+            setter = record.__setattr__
+            stage, unk1, index, unk2 = ins.unpack('=HhIb', 9, readId)
+            setter('stage', stage)
+            setter('unk1', unk1)
+            setter('index', index)
+            setter('unk2', unk2)
+            setter('scriptName', ins.readString16(-1, readId))
+            setter('fragmentName', ins.readString16(-1, readId))
 
-        def loadData(self,ins,readId):
-            self.index,self.unk1,self.unk2 = ins.unpack('=Hhb',4,readId)
-            self.scriptName = ins.readString16(-1,readId)
-            self.fragmentName = ins.readString16(-1,readId)
-
-        def dumpData(self):
+        @staticmedthod
+        def dumpData(record):
+            getter = record.__getattribute__
             structPack = struct.pack
-            scriptName = _encode(self.scriptName)
-            fragmentName = _encode(self.fragmentName)
-            data = structPack('=HhbH',self.index,self.unk1,self.unk2,len(scriptName)) + scriptName
-            data += structPack('=H',len(fragmentName)) + fragmentName
+            # stage, unk1, index, unk2
+            data = structPack('=HhIb', *[getter(attr) for attr in
+                              ('stage', 'unk1', 'index', 'unk2')])
+            # scriptName
+            scriptName = getter('scriptName')
+            data += structPack('=H', len(scriptName))
+            data += scriptName
+            # fragmentName
+            fragmentName = getter('fragmentName')
+            data += structPack('=H', len(fragmentName))
+            data += fragmentName
             return data
 
-    class QUSTFragment(object):
-        __slots__ = ('index','unk1','unk2','unk3','scriptName','fragmentName',)
-        def __init__(self):
-            self.index = -1
-            self.unk1 = 0
-            self.unk2 = 0
-            self.unk3 = 0
-            self.scriptName = u''
-            self.fragmentName = u''
+    class FragmentSCENPhase(object):
+        """Fragment used for SCEN phase fragments"""
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('flags', 'index', 'unk1', 'unk2', 'unk3',
+                                'scriptName', 'fragmentName')
+            setter = record.__setattr__
+            flags, index, unk1, unk2, unk3 = ins.unpack('=BBhbb', 6, readId)
+            # set attributes
+            setter('flags', scenFragmentFlags(flags))
+            setter('index', index)
+            setter('unk1', unk1)
+            setter('unk2', unk2)
+            setter('unk3', unk3)
+            setter('scriptName', ins.readString16(-1, readId))
+            setter('fragmentName', ins.readString16(-1, readId))
 
-        def loadData(self,ins,readId):
-            self.index,self.unk1,self.unk2,self.unk3 = ins.unpack('=Hhib',9,readId)
-            self.scriptName = ins.readString16(-1,readId)
-            self.fragmentName = ins.readString16(-1,readId)
-
-        def dumpData(self):
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
             structPack = struct.pack
-            scriptName = _encode(self.scriptName)
-            fragmentName = _encode(self.fragmentName)
-            data = structPack('=HhibH',self.index,self.unk1,self.unk2,self.unk3,len(scriptName)) + scriptName
-            data += structPack('=H',len(fragmentName)) + fragmentName
+            # flags, index, unk1, unk2, unk3
+            data = structPack('=BBhBB', *[getter(attr) for attr in
+                              ('flags', 'index', 'unk1', 'unk2', 'unk3')])
+            # scriptName
+            scriptName = getter('scriptName')
+            data += structPack('=H', len(scriptName))
+            data += scriptName
+            # fragmentname
+            fragmentName = getter('fragmentName')
+            data += structPack('=H', len(fragmentName))
+            data += fragmentName
             return data
 
-    class SCENFragment(object):
-        pass
+    # End Fragments ----------------------------------------------------------
 
-    FragmentMap = {'INFO': INFOFragment,
-                   'PACK': PACKFragment,
-                   'PERK': PERKFragment,
-                   'QUST': QUSTFragment,
-                   'SCEN': SCENFragment,
-                   }
+    # Fragment headers -------------------------------------------------------
+    class FragHeaderINFO(object):
+        """Loads header data for script fragments for INFO records."""
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('unk', 'fileName', 'fragments')
+            setter = record.__setattr__
+            # Header
+            unk, count = ins.unpack('=bB', 2, readId)
+            fileName = ins.readString16(-1, readId)
+            # Fragments
+            fragments = []
+            fragmentsAppend = fragments.append
+            for i in xrange(count):
+                fragment = MelObject()
+                FragmentBasic.loadData(fragment, ins)
+                fragmentsAppend(fragment)
+            # Set attributes
+            setter('unk', unk)
+            setter('fileName', fileName)
+            setter('fragments', fragments)
 
-    class Property(object):
-        __slots__ = ('name','unk','value',)
-        def __init__(self):
-            self.name = u''
-            self.unk = 1
-            self.value = None
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
+            structPack = struct.pack
+            unk = getter('unk')
+            fileName = getter('fileName')
+            fragments = getter('fragments')
+            # unk, fragmentCount, fileNameLen
+            data = structPack('=bBH', unk, len(fragments), len(fileName))
+            # fileName
+            data += fileName
+            # fragments
+            for fragment in fragments:
+                data += FragmentBasic.dumpData(fragment)
+            return data
 
-        def loadData(self,ins,version,objFormat,readId):
-            insUnpack = ins.unpack
-            # Script Property
-            self.name = ins.readString16(-1,readId)
-            if version >= 4:
-                Type,self.unk = insUnpack('=2B',2,readId)
+        @staticmethod
+        def mapFids(record, function, save=False):
+            pass
+
+    class FragHeaderPACK(object):
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('unk', 'fileName',
+                                'onBegin', 'onEnd', 'onChange')
+            setter = record.__setattr__
+            # Header
+            unk, flags = ins.unpack('=bB', 2, readId)
+            flags = packFragmentFlags(flags)
+            fileName = ins.readString16(-1, readId)
+            # fragments
+            if flags.onBegin:
+                onBegin = MelObjet()
+                FragmentPACK.loadData(onBegin, ins)
             else:
-                Type, = insUnpack('=B',1,readId)
-                self.unk = 1
-            # Data
-            if Type == 1:
-                # Object (8 Bytes)
-                if objFormat == 1:
-                    fid,aid,nul = insUnpack('=IHH',8,readId)
-                else:
-                    nul,aid,fid = insUnpack('=HHI',8,readId)
-                self.value = (fid,aid)
-            elif Type == 2:
-                # String
-                self.value = ins.readString16(-1,readId)
-            elif Type == 3:
-                # Int32
-                self.value, = insUnpack('=i',4,readId)
-            elif Type == 4:
-                # Float
-                self.value, = insUnpack('=f',4,readId)
-            elif Type == 5:
-                # Bool (Int8)
-                self.value = bool(insUnpack('=b',1,readId)[0])
-            elif Type == 11:
-                # List of Objects
-                count, = insUnpack('=I',4,readId)
-                if objFormat == 1: # (fid,aid,nul)
-                    value = insUnpack('='+count*'IHH',count*8,readId)
-                    self.value = zip(value[::3],value[1::3]) # list of (fid,aid)'s
-                else: # (nul,aid,fid)
-                    value = insUnpack('='+count*'HHI',count*8,readId)
-                    self.value = zip(value[2::3],value[1::3]) # list of (fid,aid)'s
-            elif Type == 12:
-                # List of Strings
-                count, = insUnpack('=I',4,readId)
-                self.value = [ins.readString16(-1,readId) for i in xrange(count)]
-            elif Type == 13:
-                # List of Int32s
-                count, = insUnpack('=I',4,readId)
-                self.value = list(insUnpack('='+`count`+'i',count*4,readId))
-            elif Type == 14:
-                # List of Floats
-                count, = insUnpack('=I',4,readId)
-                self.value = list(insUnpack('='+`count`+'f',count*4,readId))
-            elif Type == 15:
-                # List of Bools (int8)
-                count, = insUnpack('=I',4,readId)
-                self.value = map(bool,insUnpack('='+`count`+'b',count,readId))
+                onBegin = None
+            if flags.onEnd:
+                onEnd = MelObject()
+                FragmentPACK.loadData(onEnd, ins)
             else:
-                raise Exception(u'Unrecognized VM Data property type: %i' % Type)
+                onEnd = None
+            if flags.onChange:
+                onChange = MelObject()
+                FragmentPACK.loadData(onChange, ins)
+            else:
+                onChange = None
+            # set attributes
+            setter('unk', unk)
+            setter('fileName', fileName)
+            setter('onBegin', onBegin)
+            setter('onEnd', onEnd)
+            setter('onChange', onChange)
 
-        def dumpData(self):
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
             structPack = struct.pack
-            ## Property Entry
-            # Property Name
-            name = _encode(self.name)
-            data = structPack('=H',len(name))+name
-            # Property Type
-            value = self.value
-            # Type 1 - Object Reference
-            if isinstance(value,tuple):
-                # Object Format 1 - (Fid, Aid, NULL)
-                data += structPack('=BBIHH',1,self.unk,value[0],value[1],0)
-            # Type 2 - String
-            elif isinstance(value,basestring):
-                value = _encode(value)
-                data += structPack('=BBH',2,self.unk,len(value))+value
-            # Type 3 - Int
-            elif isinstance(value,(int,long)):
-                data += structPack('=BBi',3,self.unk,value)
-            # Type 4 - Float
-            elif isinstance(value,float):
-                data += structPack('=BBf',4,self.unk,value)
-            # Type 5 - Bool
-            elif isinstance(value,bool):
-                data += structPack('=BBb',5,self.unk,value)
-            # Type 11 -> 15 - lists
-            elif isinstance(value,list):
-                # Empty list, fail to object refereneces?
-                count = len(value)
-                if not count:
-                    data += structPack('=BBI',11,self.unk,count)
-                else:
-                    Type = value[0]
-                    # Type 11 - Object References
-                    if isinstance(Type,tuple):
-                        value = list(from_iterable([x+(0,) for x in value]))
-                        # value = [fid,aid,NULL, fid,aid,NULL, ...]
-                        data += structPack('=BBI'+count*'IHH',11,self.unk,count,*value)
-                    # Type 12 - Strings
-                    elif isinstance(Type,basestring):
-                        data += structPack('=BBI',12,self.unk,count)
-                        for string in value:
-                            string = _encode(string)
-                            data += structPack('=H',len(string))+string
-                    # Type 13 - Ints
-                    elif isinstance(Type,(int,long)):
-                        data += structPack('=BBI'+`count`+'i',13,self.unk,count,*value)
-                    # Type 14 - Floats
-                    elif isinstance(Type,float):
-                        data += structPack('=BBI'+`count`+'f',14,self.unk,count,*value)
-                    # Type 15 - Bools
-                    elif isinstance(Type,bool):
-                        data += structPack('=BBI'+`count`+'b',15,self.unk,count,*value)
-                    else:
-                        raise Exception(u'Unrecognized VMAD property type: %s' % type(Type))
-            else:
-                raise Exception(u'Unrecognized VMAD property type: %s' % type(Type))
+            unk = getter('unk')
+            onBegin = getter('onBegin')
+            onEnd = getter('onEnd')
+            onChange = getter('onChange')
+            fileName = getter('fileName')
+            # build flags
+            flags = packFragmentFlags()
+            if onBegin:
+                flags.onBegin = True
+            if onEnd:
+                flags.onEnd = True
+            if onChange:
+                flags.onChange = True
+            # unk, flags, fileNameLen
+            data = structPack('=bBH', unk, flags, len(fileName))
+            # fileName
+            data += fileName
+            # onBeing, onEnd, onChange
+            for fragment in (onBegin, onEnd, onChange):
+                if not fragment:
+                    continue
+                data += FragmentBasic.dumpData(fragment)
             return data
+
+        @staticmethod
+        def mapFids(record, function, save=False):
+            pass
+
+    class FragHeaderPERK(object):
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('unk', 'fileName', 'fragments')
+            setter = record.__setattr__
+            # Header
+            unk, = ins.unpack('=b', 1, readId)
+            fileName = ins.readString16(-1, readId)
+            count, = ins.unpack('=H', 2, readId)
+            # fragments
+            fragments = []
+            fragmentsAppend = fragments.append
+            for i in xrange(count):
+                fragment = MelObject()
+                FragmentPERK.loadData(fragment, ins)
+                fragmentsAppend(fragment)
+            # set attributes
+            setter('unk', unk)
+            setter('fileName', fileName)
+            setter('fragments', fragments)
+
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
+            structPack = struct.pack
+            unk = getter('unk')
+            fileName = getter('fileName')
+            fragments = getter('fragments')
+            # unk, fileNameLen
+            data = structPack('=bH', unk, len(fileName))
+            # fileName
+            data += fileName
+            # fragmentCount
+            data += structPack('=H', len(fragments))
+            # fragments
+            for fragment in fragments:
+                data += FragmentPERK.dumpData(fragment)
+            return data
+
+        @staticmethod
+        def mapFids(record, function, save=False):
+            pass
+
+    class FragHeaderQUST(object):
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('unk', 'fileName', 'fragments', 'aliases')
+            setter = record.__setattr__
+            # Header
+            unk, count = ins.unpack('=bH', 3, readId)
+            fileName = ins.readString16(-1, readId)
+            # fragments
+            fragments = []
+            fragmentsAppend = fragments.append
+            for i in xrange(count):
+                fragment = MelObject()
+                FragmentQUST.loadData(fragment, ins)
+                fragmentsAppend(fragment)
+            # aliases
+            count, = ins.unpack('=H', 2, readId)
+            aliases = []
+            aliasesAppend = aliases.append
+            for i in xrange(count):
+                alias = MelObject()
+                Alias.loadData(alias, ins)
+                aliasesAppend(alias)
+            # set attributes
+            setter('unk', unk)
+            setter('fileName', fileName)
+            setter('fragments', fragments)
+            setter('aliases', aliases)
+
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
+            structPack = struct.pack
+            unk = getter('unk')
+            fileName = getter('fileName')
+            fragments = getter('fragments')
+            aliases = getter('aliases')
+            # unk, fragmentCount, fileNameLen
+            data = structPack('=bHH', unk, len(fragments), len(fileName))
+            # fileName
+            data += fileName
+            # fragments
+            for fragment in fragments:
+                data += FragmentQUST.dumpData(fragment)
+            # aliasCount
+            data += structPack('=H', len(aliases))
+            # aliases
+            for alias in aliases:
+                data += Alias.dumpData(alias)
+            return data
+
+        @staticmethod
+        def mapFids(record, function, save=False):
+            getter = record.__getattribute__
+            for alias in getter('aliases'):
+                Alias.mapFids(alias, function, save)
+
+    class FragHeaderSCEN(object):
+        @staticmethod
+        def loadData(record, ins):
+            record.__slots__ = ('unk', 'fileName',
+                                'onBegin', 'onEnd', 'phases')
+            setter = record.__setattr__
+            # Header
+            unk, flags = ins.unpack('=bB', 2, readId)
+            flags = scenFragmentFlags(flags)
+            fileName = ins.readString16(-1, readId)
+            # begin/end fragments
+            if flags.onBegin:
+                onBegin = MelObject()
+                FragmentBasic.loadData(onBegin, ins)
+            else:
+                onBegin = None
+            if flags.onEnd:
+                onEnd = MelObject()
+                FragmentBasic.loadData(onEnd, ins)
+            else:
+                onEnd = None
+            # phase fragments
+            count, = ins.unpack('=H', 2, readId)
+            phases = []
+            phasesAppend = phases.append
+            for i in xrange(count):
+                phase = MelObject()
+                FragmentSCENPhase.loadData(phase, ins)
+                phasesAppend(phase)
+            # set attributes
+            setter('unk', unk)
+            setter('fileName', fileName)
+            setter('onBegin', onBegin)
+            setter('onEnd', onEnd)
+            setter('phases', phases)
+
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
+            structPack = struct.pack
+            unk = getter('unk')
+            fileName  = getter('fileName')
+            onBegin = getter('onBegin')
+            onEnd = getter('onEnd')
+            phases = getter('phases')
+            # build flags
+            flags = scenFragmentFlags(0L)
+            if onBegin:
+                flags.onBegin = True
+            if onEnd:
+                flags.onEnd = True
+            # unk, flags, fileNameLen
+            data = structPack('=bBH', unk, flags, len(fileName))
+            # fileName
+            data += fileName
+            # begin/end fragment
+            if onBegin:
+                data += FragmentBasic.dumpData(onBegin)
+            if onEnd:
+                data += FragmentBasic.dumpData(onEnd)
+            # phasesCount
+            data += structPack('=H', len(phases))
+            # phases
+            for phase in phases:
+                data += FragmentSCENPhase.dumpData(phase)
+            return data
+
+        @staticmethod
+        def mapFids(record, function, save=False):
+            pass
+
+    FragmentType = {
+        'INFO': FragHeaderINFO,
+        'PACK': FragHeaderPACK,
+        'PERK': FragHeaderPERK,
+        'QUST': FragHeaderQUST,
+        'SCEN': FragHeaderSCEN,
+        }
+    # End Fragment Headers ---------------------------------------------------
 
     class Script(object):
-        __slots__ = ('name','unk','properties',)
-        def __init__(self):
-            self.name = u''
-            self.unk = 0
-            self.properties = []
-
-        def loadData(self,ins,version,objFormat,readId):
-            Property = MelVmad.Property
-            self.properties = []
-            propAppend = self.properties.append
-            # Script Entry
-            self.name = ins.readString16(-1,readId)
-            if version >= 4:
-                self.unk,propCount = ins.unpack('=BH',3,readId)
-            else:
-                self.unk = 0
-                propCount, = ins.unpack('=H',2,readId)
-            # Properties
-            for x in xrange(propCount):
-                prop = Property()
-                prop.loadData(ins,version,objFormat,readId)
-                propAppend(prop)
-
-        def dumpData(self):
-            structPack = struct.pack
-            ## Script Entry
-            # scriptName
-            name = _encode(self.name)
-            data = structPack('=H',len(name))+name
-            # unkown, property count
-            data += structPack('=BH',self.unk,len(self.properties))
+        @staticmethod
+        def loadData(record, ins, version, objFormat):
+            record.__slots__ = ('name', 'status', 'properties')
+            setter = record.__setattr__
+            # name
+            name = ins.readString16(-1, readId)
+            # status
+            status, count = ins.unpack('=BH', 3, readId)
+            status = scriptStatusFlags(status)
             # properties
-            for prop in self.properties:
-                data += prop.dumpData()
+            properties = []
+            propertiesAppend = properties.append
+            for i in xrange(count):
+                property = MelObject()
+                Property.loadData(property, ins, version, objFormat)
+                propertiesAppend(propety)
+            # set attributes
+            setter('name', name)
+            setter('status', status)
+            setter('properties', properties)
+
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
+            structPack = struct.pack
+            name = getter('name')
+            status = getter('status')
+            properties = getter('properties')
+            # name
+            data = structPack('=H', len(name))
+            data += name
+            # status, property count
+            data += structPack('=BH', status, len(properties))
+            # properties
+            for property in properties:
+                data += Property.dumpData()
             return data
 
-        def mapFids(self,record,function,save=False):
-            for prop in self.properties:
-                value = prop.value
-                # Type 1 - Object Reference
-                if isinstance(value,tuple):
-                    value = (function(value[0]),value[1])
-                    if save:
-                        prop.value = value
-                # Type 11 - List of Object References
-                elif isinstance(value,list) and value and isinstance(value[0],tuple):
-                    value = [(function(x[0]),x[1]) for x in value]
-                    if save:
-                        prop.value = value
+        @staticmethod
+        def mapFids(record, function, save=False):
+            getter = record.__getattribute__
+            for property in getter('properties'):
+                Property.mapFids(propery, function, save)
+
+    class Property(object):
+        @staticmethod
+        def loadData(record, ins, version, objFormat):
+            record.__slots__ = ('name', 'status', 'data', 'type')
+            setter = record.__setattr__
+            # name
+            name = ins.readString16(-1, readId)
+            # type, status
+            if version >= 4:
+                type, status = ins.unpack('=BB', 2, readId)
+            else:
+                type, = ins.unpack('=B', 1, readId)
+                status = 1
+            status = propertyStatusFlags(status)
+            # data
+            if type == 1: # Object
+                if objFormat == 1: # fid, aid, null
+                    fid, aid, null = ins.unpack('=IHH', 8, readId)
+                else: # objFormat == 2: # null, aid, fid
+                    null, aid, fid = ins.unpack('=HHI', 8, readId)
+                data = ObjectRef(fid, aid)
+            elif type == 2: # wstring
+                data = ins.readString16(-1, readId)
+            elif type == 3: # int32
+                data, = ins.unpack('=i', 4, readId)
+            elif type == 4: # float
+                data, = ins.unpack('=f', 4, readId)
+            elif type == 5: # bool (int8)
+                data, = ins.unpack('=b', 1, readId)
+                data = True if data else False
+            elif type == 11: # Object array
+                count, = ins.unpack('=I', 4, readId)
+                if objFormat == 1: # fid, aid, null
+                    data = ins.unpack('='+count*'IHH', count*8, readId)
+                    data = zip(data[::3], data[1::3])
+                else: # objFormat == 2: # null, aid, fid
+                    data = ins.unpack('='+count*'HHI', count*8, readId)
+                    data = zip(data[2::3], data[1::3])
+                data = [ObjectRef(x,y) for x,y in data]
+            elif type == 12: # wstring array
+                count, = ins.unpack('=I', 4, readId)
+                data = [ins.readString16(-1, readId) for i in xrange(count)]
+            elif type == 13: # int32 array
+                count, = ins.unpack('=I', 4, readId)
+                data = list(ins.unpack('='+`count`+'i', count*4, readId))
+            elif type == 14: # float array
+                count, = ins.unpack('=I', 4, readId)
+                data = list(ins.unpack('='+`count`+'f', count*4, readId))
+            elif type == 15: # bool (int8) array
+                count, = ins.unpack('=I', 4, readId)
+                data = ins.unpack('='+`count`+'b', count, readId)
+                data = [True if x else False for x in data]
+            else:
+                raise Exception(u'Unrecognized VMAD property type: %s' % type)
+            # set attributes
+            setter('name', name)
+            setter('status', status)
+            setter('data', data)
+            setter('type', type)
+
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
+            structPack = struct.pack
+            name = getter('name')
+            status = getter('status')
+            rdata = getter('data')
+            type = getter('type')
+            # name
+            data = structPack('=H', len(name))
+            data += name
+            # type, status, data
+            if type == 1: # Object
+                # Write in format 2
+                data += structPack('=BBHHI',
+                                   type, stats, 0, rdata.aid, rdata.fid)
+            elif type == 2: # wstring
+                data += structPack('=BBH', type, status, len(rdata))
+                data += rdata
+            elif type == 3: # int32
+                data += structPack('=BBh', type, status, rdata)
+            elif type == 4: # float
+                data += structPack('=BBf', type, status, rdata)
+            elif type == 5: # bool (int8)
+                data += structPack('=BBb', type, status, 1 if rdata else 0)
+            elif type == 11: # Object array
+                count = len(rdata)
+                value = list(from_iterable((0,x.aid,x.fid) for x in rdata))
+                data += structPack('=BBH'+count*'HHI',
+                                   type, status, count, *value)
+            elif type == 12: # wstring array
+                count = len(rdata)
+                data += structPack('=BBH', type, status, count)
+                for value in rdata:
+                    data += structPack('=H',len(value))
+                    data += value
+            elif type == 13: # int32 array
+                count = len(rdata)
+                data += structPack('=BBH'+`count`+'i',
+                                   type, status, count, *rdata)
+            elif type == 14: # float array
+                count = len(rdata)
+                data += structPack('=BBH'+`count`+'f',
+                                   type, status, count, *rdata)
+            elif type == 15: # bool array
+                count = len(rdata)
+                value = [1 if x else 0 for x in rdata]
+                data += structPack('=BBH'+`count`+'b',
+                                   type, status, count, value)
+            else:
+                raise Exception(u'Unrecognized VMAD property type: %s' % type)
+            return data
+
+        @staticmethod
+        def mapFids(record, function, save=False):
+            getter = record.__getattribute__
+            type = getter('type')
+            if type == 1: # Object
+                data = getter('data')
+                result = function(data.fid)
+                if save:
+                    data.fid = result
+            elif type == 11: # Object array
+                if save:
+                    for ref in getter('data'):
+                        ref.fid = function(ref.fid)
+                else:
+                    for ref in getter('data'):
+                        function(ref.fid)
 
     class Alias(object):
-        __slots__ = ('unk1','aid','unk2','unk3','scripts',)
-        def __init__(self):
-            self.unk1 = 0
-            self.aid = 0
-            self.unk2 = 0
-            self.unk3 = 0
-            self.scripts = []
-
-        def loadData(self,ins,version,readId):
-            self.unk1,self.aid,self.unk2,self.unk3,objFormat,count = ins.unpack('=hHihhH',14)
-            Script = MelVmad.Script
-            self.scripts = []
-            scriptAppend = self.scripts.append
-            for x in xrange(count):
-                script = Script()
-                script.loadData(ins,version,objFormat,readId)
-                scriptAppend(script)
-
-        def mapFids(self,record,function,save=False):
-            for script in self.scripts:
-                script.mapFids(record,function,save)
-
-    class Vmad(object):
-        __slots__ = ('scripts','fragmentInfo','fragments','aliases',)
-        def __init__(self):
-            self.scripts = []
-            self.fragmentInfo = None
-            self.fragments = None
-            self.aliases = None
-
-        def loadData(self,record,ins,size,readId):
-            insTell = ins.tell
-            endOfField = insTell() + size
-            self.scripts = []
-            scriptsAppend = self.scripts.append
-            Script = MelVmad.Script
-            # VMAD Header
-            version,objFormat,scriptCount = ins.unpack('=3H',6,readId)
-            # Primary Scripts
-            for x in xrange(scriptCount):
-                script = Script()
-                script.loadData(ins,version,objFormat,readId)
-                scriptsAppend(script)
-            # Script Fragments
-            if insTell() < endOfField:
-                self.fragmentInfo = MelVmad.FragmentInfo()
-                Type = record._Type
-                fragCount = self.fragmentInfo.loadData(ins,Type,readId)
-                self.fragments = []
-                fragAppend = self.fragments.append
-                Fragment = MelVmad.FragmentMap[Type]
-                for x in xrange(fragCount):
-                    frag = Fragment()
-                    frag.loadData(ins,readId)
-                    fragAppend(frag)
-                # Alias Scripts
-                if Type == 'QUST':
-                    aliasCount = ins.unpack('=H',2,readId)
-                    Alias = MelVmad.Alias
-                    self.aliases = []
-                    aliasAppend = self.aliases.append
-                    for x in xrange(aliasCount):
-                        alias = Alias()
-                        alias.loadData(ins,version,readId)
-                        aliasAppend(alias)
-                else:
-                    self.aliases = None
+        @staticmethod
+        def loadData(record, ins, objFormat):
+            record.__slots__ = ('ref', 'scripts')
+            setter = record.__setattr__
+            # object - skip for now
+            pos = ins.tell()
+            ins.seek(pos + 8, readId)
+            # version, objFormat, scriptCount
+            version, objFormat, count = ins.unpack('=hhH', 6, readId)
+            # go back to object now
+            ins.seek(pos, readId)
+            if objFormat == 1:
+                fid, aid, null = ins.unpack('=IHH', 8, readId)
+            elif objFormat == 2:
+                null, aid, fid = ins.unpack('=HHI', 8, readId)
             else:
-                self.fragmentInfo = None
-                self.fragments = None
-                self.aliases = None
+                raise Exception(u'Unrecognized VMAD object format: %s'
+                                % objFormat)
+            ref = ObjectRef(fid, aid)
+            # skip version, objFormat, scriptCount
+            ins.seek(pos + 6, readId)
+            # scripts
+            scripts = []
+            scriptsAppend = []
+            for i in xrange(count):
+                script = MelObject()
+                Script.loadData(script, ins, version, objFormat)
+                scriptsAppend(script)
+            # set attributes
+            setter('ref', ref)
+            setter('scripts', scripts)
 
-        def dumpData(self,record):
+        @staticmethod
+        def dumpData(record):
+            getter = record.__getattribute__
             structPack = struct.pack
-            # Header
-            data = structPack('=3H',4,1,len(self.scripts)) # vmad version, object format, script count
-            # Primary Scripts
-            for script in self.scripts:
-                data += script.dumpData()
-            # Script Fragments
-            if self.fragments:
-                Type = record._Type
-                data += self.fragmentInfo.dumpData(Type,len(self.fragments))
-                for frag in self.fragments:
-                    data += frag.dumpData()
-                if Type == 'QUST':
-                    # Alias Scripts
-                    aliases = self.aliases
-                    data += structPack('=H',2,len(aliases))
-                    for alias in aliases:
-                        data += alias.dumpData()
+            ref = getter('ref')
+            scripts = getter('scripts')
+            # object (format 2), version, objFormat, scriptCount
+            data = struct.pack('=HHIhhH', 0, ref.aid, ref.fid, 5, 2,
+                               len(scripts))
+            # scripts
+            for script in scripts:
+                data += Script.dumpData(script)
             return data
 
-        def mapFids(self,record,function,save=False):
-            for script in self.scripts:
-                script.mapFids(record,function,save)
-            if not self.aliases:
-                return
-            for alias in self.aliases:
-                alias.mapFids(record,function,save)
+        @staticmethod
+        def mapFids(record, function, save=False):
+            getter = record.__getattribute__
+            ref = getter('ref')
+            result = function(ref.fid)
+            if save:
+                ref.fid = result
+            for script in getter('scripts'):
+                Script.mapFids(script, function, save)
 
-    def __init__(self,type='VMAD',attr='vmdata'):
+    # End sub attributes implementations -------------------------------------
+
+    def __init__(self,type='VMAD',attr='vmad'):
         MelBase.__init__(self,type,attr)
 
     def hasFids(self,formElements):
@@ -2301,25 +2575,67 @@ class MelVmad(MelBase):
         return self.setDefault(target)
 
     def loadData(self,record,ins,type,size,readId):
-        vmad = MelVmad.Vmad()
-        vmad.loadData(record,ins,size,readId)
-        record.__setattr__(self.attr,vmad)
+        vmad = getDefault()
+        setter = vmad.__setattr__
+        # Get end of VMAD subrecord
+        endOfVMAD = ins.tell() + size
+        # Unpack VMAD header
+        version, objFormat, scriptCount = ins.unpack('=hhH', 6, readId)
+        if objFormat not in (1, 2):
+            raise Exception(u'Unrecognized VMAD object format: %s' % objFormat)
+        # Read scripts
+        scripts = []
+        scriptsAppend = scripts.append
+        for i in xrange(scriptCount):
+            script = MelObject()
+            Script.loadData(script, ins, version, objFormat)
+            scriptsAppend(script)
+        # Read Script Fragments
+        if ins.tell() < endOfVMAD and type in FramentTypes:
+            framents = MelObject()
+            FragmentType[type].loadData(fragments, ins, version, objFormat)
+        else:
+            fragments = None
+        # set attributes
+        setter('scripts', scripts)
+        setter('fragments', fragments)
+        # Attach to record
+        record.__setattr__(self.attr, vmad)
 
     def dumpData(self,record,out):
         """Dumps data from record to outstream"""
         vmad = record.__getattribute__(self.attr)
         if vmad is None: return
-        # Write
-        out.packSub(self.subType,vmad.dumpData(record))
+        getter = vmad.__getattribute__
+        # build subrecord
+        scripts = getter('scripts')
+        # version, objFormat, scriptCount
+        data = struct.pack('=hhH', 5, 2, len(scripts))
+        # scripts
+        for script in scripts:
+            data += Script.dumpData(script)
+        # fragments
+        fragments = getter('fragments')
+        if fragments:
+            data += FragmentType[record._Type].dumpData()
+        # write
+        out.packSub(self.subType,data)
 
     def mapFids(self,record,function,save=False):
         """Applies function to fids.  If save is true, then fid is set
            to result of function."""
         vmad = record.__getattribute__(self.attr)
         if vmad is None: return
-        vmad.mapFids(record,function,save)
+        getter = vmad.__getattribute__
+        # Scripts
+        for script in getter('scripts'):
+            Script.mapFids(script, function, save)
+        # fragments
+        fragments = getter('fragments')
+        if fragments:
+            FragmentType[record._Type].mapFids(fragments, function, save)
 
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 class MelBounds(MelStruct):
     def __init__(self):
         MelStruct.__init__(self,'OBND','=6h',
