@@ -26,6 +26,7 @@
    Skyrim is set at the active game."""
 
 import struct
+import collections
 from .. import brec
 from .. import bolt
 from ..bolt import _encode
