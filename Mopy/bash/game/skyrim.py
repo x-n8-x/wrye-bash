@@ -26,7 +26,6 @@
    Skyrim is set at the active game."""
 
 import struct
-import collections
 from .. import brec
 from .. import bolt
 from ..bolt import _encode
@@ -1886,8 +1885,21 @@ class RecordHeader(brec.BaseRecordHeader):
 class MelVmad(MelBase):
     """Virtual Machine data (VMAD)"""
 
-    # So object references can be accessed by index or name
-    ObjectRef = collections.namedtuple('ObjectRef', ['fid', 'aid'])
+    # ObjectRef, FormID + AliasID
+    class ObjectRef(object):
+        __slots__ = ('fid', 'aid')
+        def __init__(self, fid, aid):
+            self.fid = fid
+            self.aid = aid
+
+        def __str__(self):
+            return '(%s, %s)' % (self.fid, self.aid)
+
+    # Helper function for reading wstrings specifically in cp1252
+    @staticmethod
+    def readString(ins, readId):
+        strLen, = ins.unpack('=H', 2, readId)
+        return ins.read(strLen, readId).decode('cp1252')
 
     # Flags ------------------------------------------------------------------
     scriptStatusFlags = bolt.Flags(0L, bolt.Flags.getNames(
@@ -1922,16 +1934,17 @@ class MelVmad(MelBase):
             setter = record.__setattr__
             unk, = ins.unpack('=b', 1, readId)
             setter('unk', unk)
-            setter('scriptName', ins.readString16(-1, readId))
-            setter('fragmentName', ins.readString16(-1, readId))
+            setter('scriptName', MelVmad.readString(ins, readId))
+            setter('fragmentName', MelVmad.readString(ins, readId))
 
         @staticmethod
         def dumpData(record):
             getter = record.__getattribute__
             structPack = struct.pack
             unk = getter('unk')
-            scriptName = getter('scriptName')
-            fragmentName = getter('fragmentName')
+            scriptName = _encode(getter('scriptName'), firstEncoding='cp1252')
+            fragmentName = _encode(getter('fragmentName'),
+                                   firstEncoding='cp1252')
             # unk, scriptNameLen
             data = structPack('=bH', unk, len(scriptName))
             # scriptName
@@ -1952,8 +1965,8 @@ class MelVmad(MelBase):
             setter('index', index)
             setter('unk1', unk1)
             setter('unk2', unk2)
-            setter('scriptName', ins.readString16(-1, readId))
-            setter('fragmentName', ins.readString16(-1, readId))
+            setter('scriptName', MelVmad.readString(ins, readId))
+            setter('fragmentName', MelVmad.readString(ins, readId))
 
         @staticmethod
         def dumpData(record):
@@ -1963,11 +1976,12 @@ class MelVmad(MelBase):
             data = structPack('=Hhb', *[getter(attr) for attr in
                               ('index', 'unk1', 'unk2')])
             # scriptName
-            scriptName = getter('scriptName')
+            scriptName = _encode(getter('scriptName'), firstEncoding='cp1252')
             data += structPack('=H', len(scriptName))
             data += scriptName
             # fragmentName
-            fragmentName = getter('fragmentName')
+            fragmentName = _encode(getter('fragmentName'),
+                                   firstEncoding='cp1252')
             data += structPack('=H', len(fragmentName))
             data += fragmentName
             return data
@@ -1984,8 +1998,8 @@ class MelVmad(MelBase):
             setter('unk1', unk1)
             setter('index', index)
             setter('unk2', unk2)
-            setter('scriptName', ins.readString16(-1, readId))
-            setter('fragmentName', ins.readString16(-1, readId))
+            setter('scriptName', MelVmad.readString(ins, readId))
+            setter('fragmentName', MelVmad.readString(ins, readId))
 
         @staticmethod
         def dumpData(record):
@@ -1995,11 +2009,12 @@ class MelVmad(MelBase):
             data = structPack('=HhIb', *[getter(attr) for attr in
                               ('stage', 'unk1', 'index', 'unk2')])
             # scriptName
-            scriptName = getter('scriptName')
+            scriptName = _encode(getter('scriptName'), firstEncoding='cp1252')
             data += structPack('=H', len(scriptName))
             data += scriptName
             # fragmentName
-            fragmentName = getter('fragmentName')
+            fragmentName = _encode(getter('fragmentName'),
+                                   firstEncoding='cp1252')
             data += structPack('=H', len(fragmentName))
             data += fragmentName
             return data
@@ -2018,8 +2033,8 @@ class MelVmad(MelBase):
             setter('unk1', unk1)
             setter('unk2', unk2)
             setter('unk3', unk3)
-            setter('scriptName', ins.readString16(-1, readId))
-            setter('fragmentName', ins.readString16(-1, readId))
+            setter('scriptName', MelVmad.readString(ins, readId))
+            setter('fragmentName', MelVmad.readString(ins.readId))
 
         @staticmethod
         def dumpData(record):
@@ -2029,11 +2044,12 @@ class MelVmad(MelBase):
             data = structPack('=BBhBB', *[getter(attr) for attr in
                               ('flags', 'index', 'unk1', 'unk2', 'unk3')])
             # scriptName
-            scriptName = getter('scriptName')
+            scriptName = _encode(getter('scriptName'), firstEncoding='cp1252')
             data += structPack('=H', len(scriptName))
             data += scriptName
             # fragmentname
-            fragmentName = getter('fragmentName')
+            fragmentName = _encode(getter('fragmentName'),
+                                   firstEncoding='cp1252')
             data += structPack('=H', len(fragmentName))
             data += fragmentName
             return data
@@ -2049,7 +2065,7 @@ class MelVmad(MelBase):
             setter = record.__setattr__
             # Header
             unk, count = ins.unpack('=bB', 2, readId)
-            fileName = ins.readString16(-1, readId)
+            fileName = MelVmad.readString(ins, readId)
             # Fragments
             fragments = []
             fragmentsAppend = fragments.append
@@ -2068,7 +2084,7 @@ class MelVmad(MelBase):
             getter = record.__getattribute__
             structPack = struct.pack
             unk = getter('unk')
-            fileName = getter('fileName')
+            fileName = _encode(getter('fileName'), firstEncoding='cp1252')
             fragments = getter('fragments')
             # unk, fragmentCount, fileNameLen
             data = structPack('=bBH', unk, len(fragments), len(fileName))
@@ -2093,7 +2109,7 @@ class MelVmad(MelBase):
             # Header
             unk, flags = ins.unpack('=bB', 2, readId)
             flags = MelVmad.packFragmentFlags(flags)
-            fileName = ins.readString16(-1, readId)
+            fileName = MelVmad.readString(ins, readId)
             # fragments
             if flags.onBegin:
                 onBegin = MelObjet()
@@ -2125,7 +2141,7 @@ class MelVmad(MelBase):
             onBegin = getter('onBegin')
             onEnd = getter('onEnd')
             onChange = getter('onChange')
-            fileName = getter('fileName')
+            fileName = _encode(getter('fileName'), firstEncoding='cp1252')
             # build flags
             flags = MelVmad.packFragmentFlags(0L)
             if onBegin:
@@ -2156,7 +2172,7 @@ class MelVmad(MelBase):
             setter = record.__setattr__
             # Header
             unk, = ins.unpack('=b', 1, readId)
-            fileName = ins.readString16(-1, readId)
+            fileName = MelVmad.readString(ins, readId)
             count, = ins.unpack('=H', 2, readId)
             # fragments
             fragments = []
@@ -2176,7 +2192,7 @@ class MelVmad(MelBase):
             getter = record.__getattribute__
             structPack = struct.pack
             unk = getter('unk')
-            fileName = getter('fileName')
+            fileName = _encode(getter('fileName'), firstEncoding='cp1252')
             fragments = getter('fragments')
             # unk, fileNameLen
             data = structPack('=bH', unk, len(fileName))
@@ -2201,7 +2217,7 @@ class MelVmad(MelBase):
             setter = record.__setattr__
             # Header
             unk, count = ins.unpack('=bH', 3, readId)
-            fileName = ins.readString16(-1, readId)
+            fileName = MelVmad.readString(ins, readId)
             # fragments
             fragments = []
             fragmentsAppend = fragments.append
@@ -2230,7 +2246,7 @@ class MelVmad(MelBase):
             getter = record.__getattribute__
             structPack = struct.pack
             unk = getter('unk')
-            fileName = getter('fileName')
+            fileName = _encode(getter('fileName'), firstEncoding='cp1252')
             fragments = getter('fragments')
             aliases = getter('aliases')
             # unk, fragmentCount, fileNameLen
@@ -2265,7 +2281,7 @@ class MelVmad(MelBase):
             # Header
             unk, flags = ins.unpack('=bB', 2, readId)
             flags = MelVmad.scenFragmentFlags(flags)
-            fileName = ins.readString16(-1, readId)
+            fileName = MelVmad.readString(ins, readId)
             # begin/end fragments
             if flags.onBegin:
                 onBegin = MelObject()
@@ -2298,7 +2314,7 @@ class MelVmad(MelBase):
             getter = record.__getattribute__
             structPack = struct.pack
             unk = getter('unk')
-            fileName  = getter('fileName')
+            fileName  = _encode(getter('fileName'), firstEncoding='cp1252')
             onBegin = getter('onBegin')
             onEnd = getter('onEnd')
             phases = getter('phases')
@@ -2344,7 +2360,7 @@ class MelVmad(MelBase):
             record.__slots__ = ('name', 'status', 'properties')
             setter = record.__setattr__
             # name
-            name = ins.readString16(-1, readId)
+            name = MelVmad.readString(ins, readId)
             # status
             status, count = ins.unpack('=BH', 3, readId)
             status = MelVmad.scriptStatusFlags(status)
@@ -2365,7 +2381,7 @@ class MelVmad(MelBase):
         def dumpData(record):
             getter = record.__getattribute__
             structPack = struct.pack
-            name = getter('name')
+            name = _encode(getter('name'), firstEncoding='cp1252')
             status = getter('status')
             properties = getter('properties')
             # name
@@ -2384,15 +2400,16 @@ class MelVmad(MelBase):
             getter = record.__getattribute__
             mF = MelVmad.Property.mapFids
             for property in getter('properties'):
-                mF(propery, function, save)
+                mF(property, function, save)
 
     class Property(object):
         @staticmethod
         def loadData(record, ins, version, objFormat, readId):
             record.__slots__ = ('name', 'status', 'data', 'type')
             setter = record.__setattr__
+            readString = MelVmad.readString
             # name
-            name = ins.readString16(-1, readId)
+            name = readString(ins, readId)
             # type, status
             if version >= 4:
                 type, status = ins.unpack('=BB', 2, readId)
@@ -2408,7 +2425,7 @@ class MelVmad(MelBase):
                     null, aid, fid = ins.unpack('=HHI', 8, readId)
                 data = MelVmad.ObjectRef(fid, aid)
             elif type == 2: # wstring
-                data = ins.readString16(-1, readId)
+                data = readString(ins, readId)
             elif type == 3: # int32
                 data, = ins.unpack('=i', 4, readId)
             elif type == 4: # float
@@ -2428,7 +2445,7 @@ class MelVmad(MelBase):
                 data = [oR(x,y) for x,y in data]
             elif type == 12: # wstring array
                 count, = ins.unpack('=I', 4, readId)
-                data = [ins.readString16(-1, readId) for i in xrange(count)]
+                data = [readString(ins, readId) for i in xrange(count)]
             elif type == 13: # int32 array
                 count, = ins.unpack('=I', 4, readId)
                 data = list(ins.unpack('='+`count`+'i', count*4, readId))
@@ -2451,7 +2468,7 @@ class MelVmad(MelBase):
         def dumpData(record):
             getter = record.__getattribute__
             structPack = struct.pack
-            name = getter('name')
+            name = _encode(getter('name'), firstEncoding='cp1252')
             status = getter('status')
             rdata = getter('data')
             type = getter('type')
@@ -2460,14 +2477,14 @@ class MelVmad(MelBase):
             data += name
             # type, status, data
             if type == 1: # Object
-                # Write in format 2
                 data += structPack('=BBHHI',
-                                   type, stats, 0, rdata.aid, rdata.fid)
+                                   type, status, 0, rdata.aid, rdata.fid)
             elif type == 2: # wstring
+                rdata = _encode(rdata, firstEncoding='cp1252')
                 data += structPack('=BBH', type, status, len(rdata))
                 data += rdata
             elif type == 3: # int32
-                data += structPack('=BBh', type, status, rdata)
+                data += structPack('=BBi', type, status, rdata)
             elif type == 4: # float
                 data += structPack('=BBf', type, status, rdata)
             elif type == 5: # bool (int8)
@@ -2481,6 +2498,7 @@ class MelVmad(MelBase):
                 count = len(rdata)
                 data += structPack('=BBH', type, status, count)
                 for value in rdata:
+                    value = _encode(value, firstEncoding='cp1252')
                     data += structPack('=H',len(value))
                     data += value
             elif type == 13: # int32 array
@@ -2587,13 +2605,10 @@ class MelVmad(MelBase):
         formElements.add(self)
 
     def setDefault(self,record):
-        record.__setattr__(self.attr,record)
+        record.__setattr__(self.attr, None)
 
     def getDefault(self):
-        target = MelObject()
-        target.__setattr__('scripts', [])
-        target.__setattr__('fragments', None)
-        return target
+        return None
 
     def loadData(self,record,ins,type,size,readId):
         vmad = MelObject()
