@@ -1917,7 +1917,7 @@ class MelVmad(MelBase):
             - INFO fragments
         """
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('unk', 'scriptName', 'fragmentName')
             setter = record.__setattr__
             unk, = ins.unpack('=b', 1, readId)
@@ -1944,7 +1944,7 @@ class MelVmad(MelBase):
     class FragmentPERK(object):
         """Fragment used by PERK records"""
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('index', 'unk1', 'unk2',
                                 'scriptName', 'fragmentName')
             setter = record.__setattr__
@@ -1975,7 +1975,7 @@ class MelVmad(MelBase):
     class FragmentQUST(object):
         """Fragment used by QUST records"""
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('stage', 'unk1', 'index', 'unk2',
                                 'scriptName', 'fragmentName')
             setter = record.__setattr__
@@ -1987,7 +1987,7 @@ class MelVmad(MelBase):
             setter('scriptName', ins.readString16(-1, readId))
             setter('fragmentName', ins.readString16(-1, readId))
 
-        @staticmedthod
+        @staticmethod
         def dumpData(record):
             getter = record.__getattribute__
             structPack = struct.pack
@@ -2007,13 +2007,13 @@ class MelVmad(MelBase):
     class FragmentSCENPhase(object):
         """Fragment used for SCEN phase fragments"""
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('flags', 'index', 'unk1', 'unk2', 'unk3',
                                 'scriptName', 'fragmentName')
             setter = record.__setattr__
             flags, index, unk1, unk2, unk3 = ins.unpack('=BBhbb', 6, readId)
             # set attributes
-            setter('flags', scenFragmentFlags(flags))
+            setter('flags', MelVmad.scenFragmentFlags(flags))
             setter('index', index)
             setter('unk1', unk1)
             setter('unk2', unk2)
@@ -2044,7 +2044,7 @@ class MelVmad(MelBase):
     class FragHeaderINFO(object):
         """Loads header data for script fragments for INFO records."""
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('unk', 'fileName', 'fragments')
             setter = record.__setattr__
             # Header
@@ -2053,9 +2053,10 @@ class MelVmad(MelBase):
             # Fragments
             fragments = []
             fragmentsAppend = fragments.append
+            ld = MelVmad.FragmentBasic.loadData
             for i in xrange(count):
                 fragment = MelObject()
-                FragmentBasic.loadData(fragment, ins)
+                ld(fragment, ins, readId)
                 fragmentsAppend(fragment)
             # Set attributes
             setter('unk', unk)
@@ -2074,8 +2075,9 @@ class MelVmad(MelBase):
             # fileName
             data += fileName
             # fragments
+            dD = MelVmad.FragmentBasic.dumpData
             for fragment in fragments:
-                data += FragmentBasic.dumpData(fragment)
+                data += dD(fragment)
             return data
 
         @staticmethod
@@ -2084,28 +2086,28 @@ class MelVmad(MelBase):
 
     class FragHeaderPACK(object):
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('unk', 'fileName',
                                 'onBegin', 'onEnd', 'onChange')
             setter = record.__setattr__
             # Header
             unk, flags = ins.unpack('=bB', 2, readId)
-            flags = packFragmentFlags(flags)
+            flags = MelVmad.packFragmentFlags(flags)
             fileName = ins.readString16(-1, readId)
             # fragments
             if flags.onBegin:
                 onBegin = MelObjet()
-                FragmentPACK.loadData(onBegin, ins)
+                MelVmad.FragmentPACK.loadData(onBegin, ins, readId)
             else:
                 onBegin = None
             if flags.onEnd:
                 onEnd = MelObject()
-                FragmentPACK.loadData(onEnd, ins)
+                MelVmad.FragmentPACK.loadData(onEnd, ins, readId)
             else:
                 onEnd = None
             if flags.onChange:
                 onChange = MelObject()
-                FragmentPACK.loadData(onChange, ins)
+                MelVmad.FragmentPACK.loadData(onChange, ins, readId)
             else:
                 onChange = None
             # set attributes
@@ -2125,7 +2127,7 @@ class MelVmad(MelBase):
             onChange = getter('onChange')
             fileName = getter('fileName')
             # build flags
-            flags = packFragmentFlags()
+            flags = MelVmad.packFragmentFlags(0L)
             if onBegin:
                 flags.onBegin = True
             if onEnd:
@@ -2140,7 +2142,7 @@ class MelVmad(MelBase):
             for fragment in (onBegin, onEnd, onChange):
                 if not fragment:
                     continue
-                data += FragmentBasic.dumpData(fragment)
+                data += MelVmad.FragmentBasic.dumpData(fragment)
             return data
 
         @staticmethod
@@ -2149,7 +2151,7 @@ class MelVmad(MelBase):
 
     class FragHeaderPERK(object):
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('unk', 'fileName', 'fragments')
             setter = record.__setattr__
             # Header
@@ -2159,9 +2161,10 @@ class MelVmad(MelBase):
             # fragments
             fragments = []
             fragmentsAppend = fragments.append
+            ld = MelVmad.FragmentPERK.loadData
             for i in xrange(count):
                 fragment = MelObject()
-                FragmentPERK.loadData(fragment, ins)
+                ld(fragment, ins, readId)
                 fragmentsAppend(fragment)
             # set attributes
             setter('unk', unk)
@@ -2182,8 +2185,9 @@ class MelVmad(MelBase):
             # fragmentCount
             data += structPack('=H', len(fragments))
             # fragments
+            dD = MelVmad.FragmentPERK.dumpData
             for fragment in fragments:
-                data += FragmentPERK.dumpData(fragment)
+                data += dD(fragment)
             return data
 
         @staticmethod
@@ -2192,7 +2196,7 @@ class MelVmad(MelBase):
 
     class FragHeaderQUST(object):
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('unk', 'fileName', 'fragments', 'aliases')
             setter = record.__setattr__
             # Header
@@ -2201,17 +2205,19 @@ class MelVmad(MelBase):
             # fragments
             fragments = []
             fragmentsAppend = fragments.append
+            ld = MelVmad.FragmentQUST.loadData
             for i in xrange(count):
                 fragment = MelObject()
-                FragmentQUST.loadData(fragment, ins)
+                ld(fragment, ins, readId)
                 fragmentsAppend(fragment)
             # aliases
             count, = ins.unpack('=H', 2, readId)
             aliases = []
             aliasesAppend = aliases.append
+            ld = MelVmad.Alias.loadData
             for i in xrange(count):
                 alias = MelObject()
-                Alias.loadData(alias, ins)
+                ld(alias, ins)
                 aliasesAppend(alias)
             # set attributes
             setter('unk', unk)
@@ -2232,49 +2238,53 @@ class MelVmad(MelBase):
             # fileName
             data += fileName
             # fragments
+            dD = MelVmad.FragmentQUST.dumpData
             for fragment in fragments:
-                data += FragmentQUST.dumpData(fragment)
+                data += dD(fragment)
             # aliasCount
             data += structPack('=H', len(aliases))
             # aliases
+            dD = MelVmad.Alias.dumpData
             for alias in aliases:
-                data += Alias.dumpData(alias)
+                dD(alias)
             return data
 
         @staticmethod
         def mapFids(record, function, save=False):
             getter = record.__getattribute__
+            mF = MelVmad.Alias.mapFids
             for alias in getter('aliases'):
-                Alias.mapFids(alias, function, save)
+                mF(alias, function, save)
 
     class FragHeaderSCEN(object):
         @staticmethod
-        def loadData(record, ins):
+        def loadData(record, ins, readId):
             record.__slots__ = ('unk', 'fileName',
                                 'onBegin', 'onEnd', 'phases')
             setter = record.__setattr__
             # Header
             unk, flags = ins.unpack('=bB', 2, readId)
-            flags = scenFragmentFlags(flags)
+            flags = MelVmad.scenFragmentFlags(flags)
             fileName = ins.readString16(-1, readId)
             # begin/end fragments
             if flags.onBegin:
                 onBegin = MelObject()
-                FragmentBasic.loadData(onBegin, ins)
+                MelVmad.FragmentBasic.loadData(onBegin, ins, readId)
             else:
                 onBegin = None
             if flags.onEnd:
                 onEnd = MelObject()
-                FragmentBasic.loadData(onEnd, ins)
+                MelVmad.FragmentBasic.loadData(onEnd, ins, readId)
             else:
                 onEnd = None
             # phase fragments
             count, = ins.unpack('=H', 2, readId)
             phases = []
             phasesAppend = phases.append
+            ld = MelVmad.FragmentSCENPhase.loadData
             for i in xrange(count):
                 phase = MelObject()
-                FragmentSCENPhase.loadData(phase, ins)
+                ld(phase, ins)
                 phasesAppend(phase)
             # set attributes
             setter('unk', unk)
@@ -2293,7 +2303,7 @@ class MelVmad(MelBase):
             onEnd = getter('onEnd')
             phases = getter('phases')
             # build flags
-            flags = scenFragmentFlags(0L)
+            flags = MelVmad.scenFragmentFlags(0L)
             if onBegin:
                 flags.onBegin = True
             if onEnd:
@@ -2304,14 +2314,15 @@ class MelVmad(MelBase):
             data += fileName
             # begin/end fragment
             if onBegin:
-                data += FragmentBasic.dumpData(onBegin)
+                data += MelVmad.FragmentBasic.dumpData(onBegin)
             if onEnd:
-                data += FragmentBasic.dumpData(onEnd)
+                data += MelVmad.FragmentBasic.dumpData(onEnd)
             # phasesCount
             data += structPack('=H', len(phases))
             # phases
+            dD = MelVmad.FragmentSCENPhase.dumpData
             for phase in phases:
-                data += FragmentSCENPhase.dumpData(phase)
+                data += dD(phase)
             return data
 
         @staticmethod
@@ -2329,21 +2340,22 @@ class MelVmad(MelBase):
 
     class Script(object):
         @staticmethod
-        def loadData(record, ins, version, objFormat):
+        def loadData(record, ins, version, objFormat, readId):
             record.__slots__ = ('name', 'status', 'properties')
             setter = record.__setattr__
             # name
             name = ins.readString16(-1, readId)
             # status
             status, count = ins.unpack('=BH', 3, readId)
-            status = scriptStatusFlags(status)
+            status = MelVmad.scriptStatusFlags(status)
             # properties
             properties = []
             propertiesAppend = properties.append
+            ld = MelVmad.Property.loadData
             for i in xrange(count):
                 property = MelObject()
-                Property.loadData(property, ins, version, objFormat)
-                propertiesAppend(propety)
+                ld(property, ins, version, objFormat, readId)
+                propertiesAppend(property)
             # set attributes
             setter('name', name)
             setter('status', status)
@@ -2362,19 +2374,21 @@ class MelVmad(MelBase):
             # status, property count
             data += structPack('=BH', status, len(properties))
             # properties
+            dD = MelVmad.Property.dumpData
             for property in properties:
-                data += Property.dumpData()
+                data += dD(property)
             return data
 
         @staticmethod
         def mapFids(record, function, save=False):
             getter = record.__getattribute__
+            mF = MelVmad.Property.mapFids
             for property in getter('properties'):
-                Property.mapFids(propery, function, save)
+                mF(propery, function, save)
 
     class Property(object):
         @staticmethod
-        def loadData(record, ins, version, objFormat):
+        def loadData(record, ins, version, objFormat, readId):
             record.__slots__ = ('name', 'status', 'data', 'type')
             setter = record.__setattr__
             # name
@@ -2385,14 +2399,14 @@ class MelVmad(MelBase):
             else:
                 type, = ins.unpack('=B', 1, readId)
                 status = 1
-            status = propertyStatusFlags(status)
+            status = MelVmad.propertyStatusFlags(status)
             # data
             if type == 1: # Object
                 if objFormat == 1: # fid, aid, null
                     fid, aid, null = ins.unpack('=IHH', 8, readId)
                 else: # objFormat == 2: # null, aid, fid
                     null, aid, fid = ins.unpack('=HHI', 8, readId)
-                data = ObjectRef(fid, aid)
+                data = MelVmad.ObjectRef(fid, aid)
             elif type == 2: # wstring
                 data = ins.readString16(-1, readId)
             elif type == 3: # int32
@@ -2410,7 +2424,8 @@ class MelVmad(MelBase):
                 else: # objFormat == 2: # null, aid, fid
                     data = ins.unpack('='+count*'HHI', count*8, readId)
                     data = zip(data[2::3], data[1::3])
-                data = [ObjectRef(x,y) for x,y in data]
+                oR = MelVmad.ObjectRef
+                data = [oR(x,y) for x,y in data]
             elif type == 12: # wstring array
                 count, = ins.unpack('=I', 4, readId)
                 data = [ins.readString16(-1, readId) for i in xrange(count)]
@@ -2504,7 +2519,7 @@ class MelVmad(MelBase):
 
     class Alias(object):
         @staticmethod
-        def loadData(record, ins, objFormat):
+        def loadData(record, ins, objFormat, readId):
             record.__slots__ = ('ref', 'scripts')
             setter = record.__setattr__
             # object - skip for now
@@ -2527,9 +2542,10 @@ class MelVmad(MelBase):
             # scripts
             scripts = []
             scriptsAppend = []
+            ld = MelVmad.Script.loadData
             for i in xrange(count):
                 script = MelObject()
-                Script.loadData(script, ins, version, objFormat)
+                ld(script, ins, version, objFormat, readId)
                 scriptsAppend(script)
             # set attributes
             setter('ref', ref)
@@ -2545,8 +2561,9 @@ class MelVmad(MelBase):
             data = struct.pack('=HHIhhH', 0, ref.aid, ref.fid, 5, 2,
                                len(scripts))
             # scripts
+            dD = MelVmad.Script.dumpData
             for script in scripts:
-                data += Script.dumpData(script)
+                data += dD(script)
             return data
 
         @staticmethod
@@ -2556,8 +2573,9 @@ class MelVmad(MelBase):
             result = function(ref.fid)
             if save:
                 ref.fid = result
+            mF = MelVmad.Script.mapFids
             for script in getter('scripts'):
-                Script.mapFids(script, function, save)
+                mF(script, function, save)
 
     # End sub attributes implementations -------------------------------------
 
@@ -2569,14 +2587,17 @@ class MelVmad(MelBase):
         formElements.add(self)
 
     def setDefault(self,record):
-        record.__setattr__(self.attr,None)
+        record.__setattr__(self.attr,record)
 
     def getDefault(self):
         target = MelObject()
-        return self.setDefault(target)
+        target.__setattr__('scripts', [])
+        target.__setattr__('fragments', None)
+        return target
 
     def loadData(self,record,ins,type,size,readId):
-        vmad = getDefault()
+        vmad = MelObject()
+        vmad.__slots__ = ('scripts', 'fragments')
         setter = vmad.__setattr__
         # Get end of VMAD subrecord
         endOfVMAD = ins.tell() + size
@@ -2587,14 +2608,15 @@ class MelVmad(MelBase):
         # Read scripts
         scripts = []
         scriptsAppend = scripts.append
+        ld = MelVmad.Script.loadData
         for i in xrange(scriptCount):
             script = MelObject()
-            Script.loadData(script, ins, version, objFormat)
+            ld(script, ins, version, objFormat, readId)
             scriptsAppend(script)
         # Read Script Fragments
         if ins.tell() < endOfVMAD and type in FramentTypes:
             framents = MelObject()
-            FragmentType[type].loadData(fragments, ins, version, objFormat)
+            MelVmad.FragmentType[type].loadData(fragments, ins, version, objFormat, readId)
         else:
             fragments = None
         # set attributes
@@ -2613,12 +2635,13 @@ class MelVmad(MelBase):
         # version, objFormat, scriptCount
         data = struct.pack('=hhH', 5, 2, len(scripts))
         # scripts
+        dD = MelVmad.Script.dumpData
         for script in scripts:
-            data += Script.dumpData(script)
+            data += dD(script)
         # fragments
         fragments = getter('fragments')
         if fragments:
-            data += FragmentType[record._Type].dumpData()
+            data += MelVmad.FragmentType[record._Type].dumpData()
         # write
         out.packSub(self.subType,data)
 
@@ -2629,12 +2652,13 @@ class MelVmad(MelBase):
         if vmad is None: return
         getter = vmad.__getattribute__
         # Scripts
+        mF = MelVmad.Script.mapFids
         for script in getter('scripts'):
-            Script.mapFids(script, function, save)
+            mF(script, function, save)
         # fragments
         fragments = getter('fragments')
         if fragments:
-            FragmentType[record._Type].mapFids(fragments, function, save)
+            MelVmad.FragmentType[record._Type].mapFids(fragments, function, save)
 
 #------------------------------------------------------------------------------
 class MelBounds(MelStruct):
