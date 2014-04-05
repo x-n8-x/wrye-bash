@@ -2604,9 +2604,6 @@ class MelVmad(MelBase):
         """Include self if has fids."""
         formElements.add(self)
 
-    def setDefault(self,record):
-        record.__setattr__(self.attr, None)
-
     def getDefault(self):
         return None
 
