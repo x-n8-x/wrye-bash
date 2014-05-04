@@ -7340,6 +7340,8 @@ class Installer(object):
         sd = bush.game.sd.installDir.lower()
         setSkipLod = settings['bash.installers.skipDistantLOD']
         setSkipScreen = settings['bash.installers.skipScreenshots']
+        if settings['bash.installers.skipPapyrusSource']:
+            skipExts = set(skipExts) | {u'.psc',}
         setSkipOBSE = not settings['bash.installers.allowOBSEPlugins']
         setSkipSD = bush.game.sd.shortName and setSkipOBSE
         setSkipDocs = settings['bash.installers.skipDocs']
@@ -7575,6 +7577,7 @@ class Installer(object):
             skipVoices = False
             skipEspmVoices = None
             skipScreenshots = False
+            skipPapyrusSource = False
             skipDocs = False
             skipImages = False
             skipDistantLOD = False
@@ -7587,6 +7590,7 @@ class Installer(object):
             skipVoices = self.skipVoices
             skipEspmVoices = set(x.cs for x in espmNots)
             skipScreenshots = settings['bash.installers.skipScreenshots']
+            skipPapyrusSource = settings['bash.installers.skipPapyrusSource']
             skipDocs = settings['bash.installers.skipDocs']
             skipImages = settings['bash.installers.skipImages']
             skipDistantLOD = settings['bash.installers.skipDistantLOD']
@@ -7728,6 +7732,8 @@ class Installer(object):
             elif skipVoices and fileStartsWith(u'sound\\voice'):
                 continue
             elif skipScreenshots and fileStartsWith(u'screenshots'):
+                continue
+            elif skipPapyrusSource and fileExt == u'.psc':
                 continue
             elif fileLower == u'wizard.txt':
                 self.hasWizard = full

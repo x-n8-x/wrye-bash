@@ -419,6 +419,7 @@ settingDefaults = {
     'bash.installers.autoApplyEmbeddedBCFs': True,
     'bash.installers.removeEmptyDirs':True,
     'bash.installers.skipScreenshots':False,
+    'bash.installers.skipPapyrusSource':True,
     'bash.installers.skipImages':False,
     'bash.installers.skipDocs':False,
     'bash.installers.skipDistantLOD':False,
@@ -18356,6 +18357,8 @@ def InitInstallerLinks():
     InstallersPanel.mainMenu.append(SeparatorLink())
     InstallersPanel.mainMenu.append(Installers_SkipOBSEPlugins())
     InstallersPanel.mainMenu.append(Installers_SkipScreenshots())
+    if bush.game.name == u'Skyrim':
+        InstallersPanel.mainMenu.append(Installers_Skip(_(u'Skip Papyrus Sources'), 'bash.installers.skipPapyrusSource'))
     InstallersPanel.mainMenu.append(Installers_SkipImages())
     InstallersPanel.mainMenu.append(Installers_SkipDocs())
     InstallersPanel.mainMenu.append(Installers_SkipDistantLOD())
