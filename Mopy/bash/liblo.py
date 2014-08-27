@@ -141,9 +141,9 @@ def Init(path):
         LIBLO_GAME_TES4:LIBLO_GAME_TES4,
         'Skyrim':LIBLO_GAME_TES5,
         LIBLO_GAME_TES5:LIBLO_GAME_TES5,
-        'Fallout 3':LIBLO_GAME_FO3,
+        'Fallout3':LIBLO_GAME_FO3,
         LIBLO_GAME_FO3:LIBLO_GAME_FO3,
-        'Fallout: New Vegas':LIBLO_GAME_FNV,
+        'FalloutNV':LIBLO_GAME_FNV,
         LIBLO_GAME_FNV:LIBLO_GAME_FNV,
         }
 
