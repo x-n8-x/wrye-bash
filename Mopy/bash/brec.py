@@ -1704,6 +1704,7 @@ class MreGmstBase(MelRecord):
                 old = bolt.deprintOn
                 bolt.deprintOn = True
                 bolt.deprint(u'Error loading %s:' % fname, traceback=True)
+                bolt.deprintOn = old
                 raise
         return GPath(cls.Master+u'.esm'),cls.Ids[self.eid]
 
