@@ -35,6 +35,7 @@ from operator import attrgetter
 import bolt
 from bolt import _unicode, _encode, sio, GPath
 from bass import null1
+import bush
 
 # Util Functions ---------------------------------------------------------------
 #--Type coercion
@@ -1697,9 +1698,9 @@ class MreGmstBase(MelRecord):
         cls = self.__class__
         if not cls.Ids:
             try:
-                fname = cls.Master+u'_ids.pkl'
                 import bosh # Late import to avoid circular imports
-                cls.Ids = cPickle.load(bosh.dirs['db'].join(fname).open())[cls.classType]
+                fname = bosh.dirs['mopy'].join(bush.game.pklfile)
+                cls.Ids = cPickle.load(fname.open())[cls.classType]
             except:
                 old = bolt.deprintOn
                 bolt.deprintOn = True

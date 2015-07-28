@@ -1084,7 +1084,7 @@ class MreFurn(MelRecord):
 
 class MreGmst(MreGmstBase):
     """Oblivion gmst record"""
-    Master = u'Oblivion'
+    # Master is initialized in __init__.py
 
 class MreGras(MelRecord):
     """Grass record."""

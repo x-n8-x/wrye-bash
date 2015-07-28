@@ -1534,3 +1534,5 @@ def init():
         set(brec.MreRecord.type_class) - {'TES4', 'ACHR', 'ACRE', 'REFR',
                                           'CELL', 'PGRD', 'ROAD', 'LAND',
                                           'WRLD', 'INFO', 'DIAL'})
+    nehrimPath = bush.gamePath.join(u'Data\\Nehrim.esm')
+    MreGmst.Master = u'Nehrim' if nehrimPath.exists() else u'Oblivion'
