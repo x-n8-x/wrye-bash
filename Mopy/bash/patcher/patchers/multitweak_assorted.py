@@ -1352,7 +1352,7 @@ class AssortedTweak_ScriptEffectSilencer(AAssortedTweak_ScriptEffectSilencer,
 
     def buildPatch(self,log,progress,patchFile):
         """Edits patch file as desired. Will write to log."""
-        nullRef = (GPath(u'Oblivion.esm'),0)
+        nullRef = (bosh.modInfos.masterName,0)
         silentattrs = {
             'model' : None,
             'projectileSpeed' : 9999,
