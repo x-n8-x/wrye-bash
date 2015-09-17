@@ -27,7 +27,11 @@
 import ScriptParser         # generic parser class
 from ScriptParser import error
 import wx
-import wx.wizard as wiz     # wxPython wizard class
+if 'phoenix' in wx.version():  # ===PHOENIX PORTING HACKS & FIXES===
+    import wx.adv as wiz  # PHOENIX HACKish namespace FIX
+    wiz.PyWizardPage = wiz.WizardPage # PHOENIX quick HACK
+else:  # wxPython Classic
+    import wx.wizard as wiz     # wxPython wizard class
 import bosh, balt, bolt, bush
 import win32api
 import StringIO
