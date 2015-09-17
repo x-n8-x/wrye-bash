@@ -73,7 +73,7 @@ class DocBrowser(wx.Frame):
         self.modNameList = balt.listBox(self, choices=sorted(
             x.s for x in self.docs.keys()), isSort=True)
         self.modNameList.Bind(wx.EVT_LISTBOX,self.DoSelectMod)
-        #wx.EVT_COMBOBOX(self.modNameBox,ID_SELECT,self.DoSelectMod)
+        ## self.modNameBox.Bind(wx.EVT_COMBOBOX, self.DoSelectMod, id=ID_SELECT)  # TODO: Is this cruft and can it be removed?
         #--Application Icons
         self.SetIcons(Resources.bashDocBrowser)
         #--Set Doc
