@@ -2501,7 +2501,7 @@ class InstallersPanel(SashTankPanel):
                                      panel=self)
         #--Package
         self.gPackage = RoTextCtrl(right, noborder=True)
-        self.gPackage.HideNativeCaret()
+        ### self.gPackage.HideNativeCaret()  # Why are we hiding the caret? This is also missing or not hooked in for PHOENIX
         #--Info Tabs
         self.gNotebook = wx.Notebook(subSplitter,style=wx.NB_MULTILINE)
         self.gNotebook.SetSizeHints(100,100)
@@ -2819,7 +2819,7 @@ class InstallersPanel(SashTankPanel):
             self.gSubList.Clear()
             self.gEspmList.Clear()
             self.gComments.SetValue(u'')
-        self.gPackage.HideNativeCaret()
+        ### self.gPackage.HideNativeCaret()  # Why are we hiding the caret? This is also missing or not hooked in for PHOENIX
 
     def RefreshInfoPage(self,index,installer):
         """Refreshes notebook page."""
