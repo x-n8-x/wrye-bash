@@ -3822,6 +3822,8 @@ class BashFrame(wx.Frame):
     def RefreshData(self, event=None, booting=False):
         """Refreshes all data. Can be called manually, but is also triggered
         by window activation event.""" # hunt down - performance sink !
+        if not self.notebook.currentPage:  # App is closing. Avoid wx.PyAssertionError/wx.wxAssertionError!
+            return
         #--Ignore deactivation events.
         if event and not event.GetActive() or self.inRefreshData: return
         #--UPDATES-----------------------------------------
