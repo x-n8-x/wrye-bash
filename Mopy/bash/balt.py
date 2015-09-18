@@ -1309,7 +1309,7 @@ class Progress(bolt.Progress):
             style |= wx.PD_CAN_ABORT
             self.fnAbort = onAbort
         self.dialog = wx.ProgressDialog(title,message,100,parent,style)
-        self.dialog.SetFocus()
+        ## self.dialog.SetFocus()  # TODO wx3.0 This is what freezes the InstallersPanel when clicking on it. Is this really needed?
         bolt.Progress.__init__(self)
         self.message = message
         self.isDestroyed = False
@@ -1340,7 +1340,7 @@ class Progress(bolt.Progress):
             raise StateError(u'Dialog already destroyed.')
         elif (state == 0 or state == 1 or (message != self.prevMessage) or
             (state - self.prevState) > 0.05 or (time.time() - self.prevTime) > 0.5):
-            self.dialog.SetFocus()
+            ## self.dialog.SetFocus()  # TODO wx3.0 This is what freezes the InstallersPanel when clicking on it. Is this really needed?
             if message != self.prevMessage:
                 ret = self.dialog.Update(int(state*100),message)
                 if not ret[0]:
