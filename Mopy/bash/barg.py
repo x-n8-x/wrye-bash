@@ -62,7 +62,13 @@ def parse():
     # userPath #
     h = """Specify the user profile path. May help if HOMEDRIVE and/or
     HOMEPATH are missing from the user's environment"""
-    arg(userPathGroup, '-u', '--userPath', dest='userPath')
+    arg(userPathGroup, '-u', '--userPath', dest='userPath')  # FIXME: -u
+    # This seemed to be ignored, or didnt do much if set to sometihng invalid.
+    # I would expect manually specified arguments to override anything else.
+    # Does it just not do anything with this? Maybe it happens during some
+    # function i didnt use. That seems like it could lead to confusing bugs.
+    # The path should probably be checked to be valid first, error otherwise.
+
     # localAppDataPath #
     h = """Specify the user's local application data directory.If you need
     to set this then you probably need to set -p too."""
@@ -77,13 +83,17 @@ def parse():
     launches. Either specify the filepath with  the -f/--filename options or
     Wrye Bash will prompt the user for the backup file path."""
     arg(backupGroup, '-b', '--backup', dest='backup', action='store_true',
-        default=False)
+        default=False)  # FIXME: Weird bug, for some reason it resets any
+        # open explorer windows to their default open location, after it is
+        # saved. On windows 10, x64 bit, no file specified, using prompt.
+        # Does NOT happen if file is specified on commandline, so it's
+        # something to do with how we use the save dialog.
     # restore #
     h = """Restore all Bash settings from an archive file before the app
     launches. Either specify the filepath with  the -f/--filename options or
     Wrye Bash will prompt the user for the backup file path."""
     arg(backupGroup, '-r', '--restore', dest='restore', action='store_true',
-        default=False)
+        default=False)  # FIXME: same bug as before. Same conditions.
     # filename #
     h = """The file to use with the -r or -b options. Must end in '.7z' and
     be a valid path and for -r exist and for -b not already exist."""
@@ -163,6 +173,12 @@ def parse():
     parser.add_argument('--genHtml',
                         default=None,
                         help=argparse.SUPPRESS)
+    # FIXME: Launches in english if it cant find the language/fails to load it.
+    # Also, for me, fails to load language files and instead opens a file
+    # called msgfmt.py in a texteditor/pycharm. ALong with the message
+    # " IOError: [Errno 2] No such file or directory: u'bash\\l10n\\de.mo' "
+    # This could confuse the user. (Shouldent we also have a translation for
+    # these commands?)
     parser.add_argument('-L', '--Language',
                         action='store',
                         default='',
