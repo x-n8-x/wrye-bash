@@ -28,7 +28,7 @@ import argparse
 
 def parse():
     """Helper function to define commandline arguments"""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     #### Groups ####
     def arg(group, dashed, descr, dest, action='store', default=None):
