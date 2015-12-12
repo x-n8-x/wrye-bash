@@ -6710,8 +6710,8 @@ class InstallersData(DataDict):
         if 'D' in what:
             changed |= Installer.refreshSizeCrcDate(
                 dirs['mods'], self.data_sizeCrcDate, progress, fullRefresh)
-        if 'I' in what: changed |= self.refreshInstallers(progress,fullRefresh)
         tracker.print_diff()
+        if 'I' in what: changed |= self.refreshInstallers(progress,fullRefresh)
         if 'O' in what or changed: changed |= self.refreshOrder()
         if 'N' in what or changed: changed |= self.refreshNorm()
         if 'S' in what or changed: changed |= self.refreshInstallersStatus()
