@@ -2590,6 +2590,8 @@ class InstallersPanel(SashTankPanel):
         self._first_run_set_enabled()
         if not settings['bash.installers.enabled'] or self.refreshing: return
         refresh_ui = [False]
+        from pympler.tracker import SummaryTracker
+        tracker = SummaryTracker()
         try:
             self.refreshing = True
             self._refresh_installers(refresh_ui, canCancel, fullRefresh)
@@ -2597,6 +2599,7 @@ class InstallersPanel(SashTankPanel):
             super(InstallersPanel, self).ShowPanel()
         finally:
             self.refreshing = False
+            tracker.print_diff()
 
     def _refresh_installers(self, refreshui, canCancel, fullRefresh):
         data = self.data
