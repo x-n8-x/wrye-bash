@@ -6705,12 +6705,15 @@ class InstallersData(DataDict):
         if self.lastKey not in self.data:
             self.data[self.lastKey] = InstallerMarker(self.lastKey)
         #--Refresh Other - FIXME(ut): docs
+        from pympler.tracker import SummaryTracker
+        tracker = SummaryTracker()
         if 'D' in what:
             changed |= Installer.refreshSizeCrcDate(
                 dirs['mods'], self.data_sizeCrcDate, progress, fullRefresh)
         if 'I' in what: changed |= self.refreshInstallers(progress,fullRefresh)
         if 'O' in what or changed: changed |= self.refreshOrder()
         if 'N' in what or changed: changed |= self.refreshNorm()
+        tracker.print_diff()
         if 'S' in what or changed: changed |= self.refreshInstallersStatus()
         if 'C' in what or changed: changed |= \
             self.converters_data.refreshConverters(progress, fullRefresh)
