@@ -787,8 +787,8 @@ def _showLogClose(evt=None):
     """Handle log message closing."""
     window = evt.GetEventObject()
     if not window.IsIconized() and not window.IsMaximized():
-        _settings['balt.LogMessage.pos'] = tuple(window.GetPosition())  # wx28/PHOENIX FIX
-        _settings['balt.LogMessage.size'] = tuple(window.GetSize())  # wx28/PHOENIX FIX
+        _settings['balt.LogMessage.pos'] = window.GetPosition()
+        _settings['balt.LogMessage.size'] = window.GetSize()
     window.Destroy()
 
 def showLog(parent, logText, title=u'', asDialog=True, fixedFont=False,
@@ -895,8 +895,8 @@ def showWryeLog(parent, logText, title=u'', asDialog=True, icons=None):
     if asDialog:
         window.ShowModal()
         if window:
-            _settings['balt.WryeLog.pos'] = tuple(window.GetPosition())  # wx28/PHOENIX FIX
-            _settings['balt.WryeLog.size'] = tuple(window.GetSize())  # wx28/PHOENIX FIX
+            _settings['balt.WryeLog.pos'] = window.GetPosition()
+            _settings['balt.WryeLog.size'] = window.GetSize()
             window.Destroy()
     else:
         window.Show()
@@ -974,7 +974,7 @@ class Dialog(wx.Dialog):
     def OnCloseWindow(self, event):
         """Handle window close event.
         Remember window size, position, etc."""
-        if self.resizable: sizes[self.sizesKey] = tuple(self.GetSize())  # wx28/PHOENIX FIX
+        if self.resizable: sizes[self.sizesKey] = self.GetSize()
         event.Skip()
 
     @classmethod
@@ -1120,12 +1120,12 @@ class ListEditor(Dialog):
     def DoSave(self):
         """Handle save button."""
         self._listEditorData.save()
-        sizes[self.sizesKey] = tuple(self.GetSize())  # wx28/PHOENIX FIX
+        sizes[self.sizesKey] = self.GetSize()
         self.EndModal(wx.ID_OK)
 
     def DoCancel(self):
         """Handle cancel button."""
-        sizes[self.sizesKey] = tuple(self.GetSize())  # wx28/PHOENIX FIX
+        sizes[self.sizesKey] = self.GetSize()
         self.EndModal(wx.ID_CANCEL)
 
 #------------------------------------------------------------------------------
@@ -1802,7 +1802,7 @@ class UIList(wx.Panel):
     #-- Callbacks -------------------------------------------------------------
     def OnSize(self, event):
         """Panel size was changed. Change gList size to match."""
-        size = tuple(self.GetClientSize())  # wx28/PHOENIX FIX
+        size = self.GetClientSize()
         self._gList.SetSize(size)
 
     def OnMouse(self,event):
