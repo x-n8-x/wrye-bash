@@ -468,7 +468,7 @@ class PatchDialog(balt.Dialog):
     #--GUI --------------------------------
     def OnSize(self,event):
         event.Skip()
-        balt.sizes[self.__class__.__name__] = self.GetSize()
+        balt.sizes[self.__class__.__name__] = tuple(self.GetSize())
         self.Layout()
         self.currentPatcher.Layout()
 
