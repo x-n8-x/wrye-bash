@@ -2466,8 +2466,8 @@ class InstallersList(balt.Tank):
 class InstallersDetails(_SashDetailsPanel):
 ## class InstallersDetails(SashPanel):  # Has problems splitting the panel...
     """Installers details panel."""
-    ## espmMenu = Links()  # TODO These should probably be here, not in InstallersPanel...
-    ## subsMenu = Links()  # TODO These should probably be here, not in InstallersPanel...
+    espmMenu = Links()
+    subsMenu = Links()
     keyPrefix = 'bash.installers.details'
 
     def __init__(self, parent):
@@ -2798,9 +2798,7 @@ class InstallersDetails(_SashDetailsPanel):
         selected = self.gEspmList.HitTest((x,y))
         self.gEspmList.SetSelection(selected)
         #--Show/Destroy Menu
-        ### InstallersPanel.espmMenu.PopupMenu(self, Link.Frame, selected)
-        InstallersPanel.espmMenu.PopupMenu(self.installersPanel, Link.Frame, selected)
-        ## InstallersDetails.espmMenu.PopupMenu(self, Link.Frame, selected)
+        InstallersDetails.espmMenu.PopupMenu(self, Link.Frame, selected)
 
     def SubsSelectionMenu(self, event):
         """Handle right click in espm list."""
@@ -2809,9 +2807,7 @@ class InstallersDetails(_SashDetailsPanel):
         selected = self.gSubList.HitTest((x,y))
         self.gSubList.SetSelection(selected)
         #--Show/Destroy Menu
-        ### InstallersPanel.subsMenu.PopupMenu(self, Link.Frame, selected)
-        InstallersPanel.subsMenu.PopupMenu(self.installersPanel, Link.Frame, selected)
-        ## InstallersDetails.subsMenu.PopupMenu(self, Link.Frame, selected)
+        InstallersDetails.subsMenu.PopupMenu(self, Link.Frame, selected)
 
     def OnCheckEspmItem(self, event):
         """Handle check/uncheck of item."""

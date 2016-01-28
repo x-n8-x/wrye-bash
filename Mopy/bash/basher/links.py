@@ -25,7 +25,7 @@
 """Links initialization functions. Each panel's UIList has main and items Links
 attributes which are populated here. Therefore the layout of the menus is
 also defined in these functions."""
-from . import InstallersPanel, InstallersList, INIList, ModList, SaveList, \
+from . import InstallersPanel, InstallersDetails, InstallersList, INIList, ModList, SaveList, \
     BSAList, ScreensList, MasterList, bEnableWizard, PeopleList, \
     BashStatusBar, BashNotebook
 from .constants import PNG, BMP, TIF, ICO, JPEG
@@ -327,7 +327,24 @@ def InitInstallerLinks():
     InstallersPanel.subsMenu.append(Installer_Subs_ToggleSelection())
     InstallersPanel.subsMenu.append(SeparatorLink())
     InstallersPanel.subsMenu.append(Installer_Subs_ListSubPackages())
-
+    ## MCOW #--espms Main Menu
+    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_SelectAll())
+    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_DeselectAll())
+    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_List())
+    ## MCOW InstallersDetails.espmMenu.append(SeparatorLink())
+    ## MCOW #--espms Item Menu
+    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_Rename())
+    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_Reset())
+    ## MCOW InstallersDetails.espmMenu.append(SeparatorLink())
+    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_ResetAll())
+    ## MCOW #--Sub-Package Main Menu
+    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_SelectAll())
+    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_DeselectAll())
+    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_ToggleSelection())
+    ## MCOW InstallersDetails.subsMenu.append(SeparatorLink())
+    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_ListSubPackages())
+    
+    
 #------------------------------------------------------------------------------
 def InitINILinks():
     """Initialize INI Edits tab menus."""
