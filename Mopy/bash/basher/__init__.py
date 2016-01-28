@@ -2462,6 +2462,375 @@ class InstallersList(balt.Tank):
         self.RefreshUI()
 
 #------------------------------------------------------------------------------
+# HELP Which class to inherit from to use here? _SashDetailsPanel has buttons for editables...
+class InstallersDetails(_SashDetailsPanel):
+## class InstallersDetails(SashPanel):  # Has problems splitting the panel...
+    """Installers details panel."""
+    ## espmMenu = Links()  # TODO These should probably be here, not in InstallersPanel...
+    ## subsMenu = Links()  # TODO These should probably be here, not in InstallersPanel...
+    keyPrefix = 'bash.installers.details'
+
+    def __init__(self, parent):
+        """Initialize."""
+        super(InstallersDetails, self).__init__(parent)
+        self.installersPanel = installersPanel = parent.GetParent().GetParent()
+        ## print(installersPanel.__class__.__name__ == 'InstallersPanel')  # DEBUG make sure we are in the right place
+        self.uiList = self.uilist = installersPanel.uiList  # HELP is this right? 2 different cases: camelCase and lowercase. self.uilist allows the commentsSplitter to split correctly when initializing.
+        self.data = installersPanel.data
+        self.detailsItem = installersPanel.detailsItem
+
+        ## subSplitter, masterPanel = self.subSplitter, self.masterPanel
+        ## left, right = self.left, self.right
+        top, bottom = self.top, self.bottom
+        # top, bottom = self.left, self.right
+
+        ## self.commentsSplitter = commentsSplitter = \
+            ## wx.SplitterWindow(right, style=splitterStyle)
+        self.commentsSplitter = commentsSplitter = \
+            self.splitter
+        subSplitter = wx.SplitterWindow(top, style=splitterStyle)
+        checkListSplitter = wx.SplitterWindow(subSplitter, style=splitterStyle)
+
+        #--Package
+        self.gPackage = RoTextCtrl(top, noborder=True)
+        ### self.gPackage.HideNativeCaret()  # Why are we hiding the caret? This is also missing or not hooked in for PHOENIX
+        #--Info Tabs
+        self.gNotebook = wx.Notebook(subSplitter, style=wx.NB_MULTILINE)
+        self.gNotebook.SetSizeHints(100,100)
+        self.infoPages = []
+        infoTitles = (
+            ('gGeneral', _(u'General')),
+            ('gMatched', _(u'Matched')),
+            ('gMissing', _(u'Missing')),
+            ('gMismatched', _(u'Mismatched')),
+            ('gConflicts', _(u'Conflicts')),
+            ('gUnderrides', _(u'Underridden')),
+            ('gDirty', _(u'Dirty')),
+            ('gSkipped', _(u'Skipped')),
+            )
+        for name,title in infoTitles:
+            gPage = RoTextCtrl(self.gNotebook, name=name, hscroll=True,
+                               autotooltip=False)
+            self.gNotebook.AddPage(gPage, title)
+            self.infoPages.append([gPage, False])
+        self.gNotebook.SetSelection(settings['bash.installers.page'])
+        self.gNotebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnShowInfoPage)
+        #--Sub-Installers
+        subPackagesPanel = wx.Panel(checkListSplitter)
+        subPackagesLabel = StaticText(subPackagesPanel, _(u'Sub-Packages'))
+        self.gSubList = balt.listBox(subPackagesPanel, isExtended=True,
+                                     kind='checklist')
+        self.gSubList.Bind(wx.EVT_CHECKLISTBOX, self.OnCheckSubItem)
+        self.gSubList.Bind(wx.EVT_RIGHT_UP, self.SubsSelectionMenu)
+        #--Espms
+        espmsPanel = wx.Panel(checkListSplitter)
+        espmsLabel = StaticText(espmsPanel, _(u'Esp/m Filter'))
+        self.espms = []
+        self.gEspmList = balt.listBox(espmsPanel, isExtended=True,
+                                      kind='checklist')
+        self.gEspmList.Bind(wx.EVT_CHECKLISTBOX, self.OnCheckEspmItem)
+        self.gEspmList.Bind(wx.EVT_RIGHT_UP, self.SelectionMenu)
+        #--Comments
+        commentsPanel = wx.Panel(bottom)
+        commentsLabel = StaticText(commentsPanel, _(u'Comments'))
+        self.gComments = TextCtrl(commentsPanel, multiline=True)
+        #--Splitter settings
+        checkListSplitter.SetMinimumPaneSize(50)
+        checkListSplitter.SplitVertically(subPackagesPanel, espmsPanel)
+        checkListSplitter.SetSashGravity(0.5)
+        subSplitter.SetMinimumPaneSize(50)
+        subSplitter.SplitHorizontally(self.gNotebook, checkListSplitter)
+        subSplitter.SetSashGravity(0.5)
+        commentsHeight = self.gPackage.GetSize()[1]
+        commentsSplitter.SetMinimumPaneSize(commentsHeight)
+        commentsSplitter.SplitHorizontally(subSplitter, commentsPanel)
+        commentsSplitter.SetSashGravity(1.0)
+
+        #--Layout
+        subPackagesSizer = vSizer(subPackagesLabel, (self.gSubList,1,wx.EXPAND,2))
+        subPackagesSizer.SetSizeHints(subPackagesPanel)
+        subPackagesPanel.SetSizer(subPackagesSizer)
+        espmsSizer = vSizer(espmsLabel, (self.gEspmList,1,wx.EXPAND,2))
+        espmsSizer.SetSizeHints(espmsPanel)
+        espmsPanel.SetSizer(espmsSizer)
+
+        topSizer = vSizer(
+            (self.gPackage,0,wx.EXPAND),
+            (subSplitter,1,wx.EXPAND|wx.ALL,2),
+            )
+        top.SetSizer(topSizer)
+        wx.LayoutAlgorithm().LayoutWindow(self, top)
+
+        commentsSizer = vSizer(commentsLabel, (self.gComments,1,wx.EXPAND,2))
+        commentsSizer.SetSizeHints(commentsPanel)
+        commentsPanel.SetSizer(commentsSizer)
+
+        bottomSizer = vSizer(
+            (commentsPanel,1,wx.EXPAND,2))
+        bottomSizer.SetSizeHints(bottom)
+        bottom.SetSizer(bottomSizer)
+        wx.LayoutAlgorithm().LayoutWindow(self, bottom)
+
+        commentsSplitterSavedSashPos = settings.get('bash.installers.commentsSplitterSashPos', 0)
+        # restore saved comments text box size
+        if 0 == commentsSplitterSavedSashPos:
+            commentsSplitter.SetSashPosition(-commentsHeight)
+        else:
+            commentsSplitter.SetSashPosition(commentsSplitterSavedSashPos)
+
+    def GetDetailsItem(self):  # HELP is this right?
+        self.detailsItem = self.installersPanel.detailsItem
+        return self.installersPanel.GetDetailsItem()
+
+    #--Details view (if it exists)
+    def SaveDetails(self):  # HELP should this def be here or in InstallersPanel class?
+        """Saves details if they need saving."""
+        settings['bash.installers.page'] = self.gNotebook.GetSelection()
+        if not self.detailsItem: return
+        if self.detailsItem not in self.data: return
+        if not self.gComments.IsModified(): return
+        installer = self.data[self.detailsItem]
+        installer.comments = self.gComments.GetValue()
+        self.data.setChanged()
+
+    def SetFile(self, fileName='SAME'):
+        """Refreshes detail view associated with data from item."""
+        if fileName == 'SAME': fileName = self.detailsItem
+        if fileName not in self.data: fileName = None
+        self.SaveDetails() #--Save previous details
+        self.detailsItem = fileName
+        del self.espms[:]
+        if fileName:
+            installer = self.data[fileName]
+            #--Name
+            self.gPackage.SetValue(fileName.s)
+            #--Info Pages
+            currentIndex = self.gNotebook.GetSelection()
+            for index,(gPage, state) in enumerate(self.infoPages):
+                self.infoPages[index][1] = False
+                if index == currentIndex: self.RefreshInfoPage(index,installer)
+                else: gPage.SetValue(u'')
+            #--Sub-Packages
+            self.gSubList.Clear()
+            if len(installer.subNames) <= 2:
+                self.gSubList.Clear()
+            else:
+                balt.setCheckListItems(self.gSubList, [x.replace(u'&',u'&&') for x in installer.subNames[1:]], installer.subActives[1:])
+            #--Espms
+            if not installer.espms:
+                self.gEspmList.Clear()
+            else:
+                names = self.espms = sorted(installer.espms)
+                names.sort(key=lambda x: x.cext != u'.esm')
+                balt.setCheckListItems(self.gEspmList, [[u'',u'*'][installer.isEspmRenamed(x.s)]+x.s.replace(u'&',u'&&') for x in names],
+                    [x not in installer.espmNots for x in names])
+            #--Comments
+            self.gComments.SetValue(installer.comments)
+        else:
+            self.gPackage.SetValue(u'')
+            for index,(gPage,state) in enumerate(self.infoPages):
+                self.infoPages[index][1] = True
+                gPage.SetValue(u'')
+            self.gSubList.Clear()
+            self.gEspmList.Clear()
+            self.gComments.SetValue(u'')
+        ### self.gPackage.HideNativeCaret()  # Why are we hiding the caret? This is also missing or not hooked in for PHOENIX
+
+    def RefreshInfoPage(self, index, installer):
+        """Refreshes notebook page."""
+        gPage, initialized = self.infoPages[index]
+        if initialized: return
+        else: self.infoPages[index][1] = True
+        pageName = gPage.GetName()
+        sNone = _(u'[None]')
+        def sortKey(file):
+            dirFile = file.lower().rsplit(u'\\',1)
+            if len(dirFile) == 1: dirFile.insert(0,u'')
+            return dirFile
+        def dumpFiles(installer, files, default=u'', header=u'', isPath=False):
+            if files:
+                buff = StringIO.StringIO()
+                if isPath: files = [x.s for x in files]
+                else: files = list(files)
+                sortKeys = dict((x,sortKey(x)) for x in files)
+                files.sort(key=lambda x: sortKeys[x])
+                if header: buff.write(header+u'\n')
+                for file in files:
+                    oldName = installer.getEspmName(file)
+                    buff.write(oldName)
+                    if oldName != file:
+                        buff.write(u' -> ')
+                        buff.write(file)
+                    buff.write(u'\n')
+                return buff.getvalue()
+            elif header:
+                return header+u'\n'
+            else:
+                return u''
+        if pageName == 'gGeneral':
+            info = u'== '+_(u'Overview')+u'\n'
+            info += _(u'Type: ')
+            if isinstance(installer,bosh.InstallerProject):
+                info += _(u'Project')
+            elif isinstance(installer,bosh.InstallerMarker):
+                info += _(u'Marker')
+            elif isinstance(installer,bosh.InstallerArchive):
+                info += _(u'Archive')
+            else:
+                info += _(u'Unrecognized')
+            info += u'\n'
+            if isinstance(installer,bosh.InstallerMarker):
+                info += _(u'Structure: N/A')+u'\n'
+            elif installer.type == 1:
+                info += _(u'Structure: Simple')+u'\n'
+            elif installer.type == 2:
+                if len(installer.subNames) == 2:
+                    info += _(u'Structure: Complex/Simple')+u'\n'
+                else:
+                    info += _(u'Structure: Complex')+u'\n'
+            elif installer.type < 0:
+                info += _(u'Structure: Corrupt/Incomplete')+u'\n'
+            else:
+                info += _(u'Structure: Unrecognized')+u'\n'
+            nConfigured = len(installer.data_sizeCrc)
+            nMissing = len(installer.missingFiles)
+            nMismatched = len(installer.mismatchedFiles)
+            if isinstance(installer,bosh.InstallerProject):
+                info += _(u'Size:')+u' %s KB\n' % formatInteger(max(installer.size,1024)/1024 if installer.size else 0)
+            elif isinstance(installer,bosh.InstallerMarker):
+                info += _(u'Size:')+u' N/A\n'
+            elif isinstance(installer,bosh.InstallerArchive):
+                if installer.isSolid:
+                    if installer.blockSize:
+                        sSolid = _(u'Solid, Block Size: %d MB') % installer.blockSize
+                    elif installer.blockSize is None:
+                        sSolid = _(u'Solid, Block Size: Unknown')
+                    else:
+                        sSolid = _(u'Solid, Block Size: 7z Default')
+                else:
+                    sSolid = _(u'Non-solid')
+                info += _(u'Size: %s KB (%s)') % (formatInteger(max(installer.size,1024)/1024 if installer.size else 0),sSolid) + u'\n'
+            else:
+                info += _(u'Size: Unrecognized')+u'\n'
+            info += (_(u'Modified:')+u' %s\n' % formatDate(installer.modified),
+                     _(u'Modified:')+u' N/A\n',)[isinstance(installer,bosh.InstallerMarker)]
+            info += (_(u'Data CRC:')+u' %08X\n' % installer.crc,
+                     _(u'Data CRC:')+u' N/A\n',)[isinstance(installer,bosh.InstallerMarker)]
+            info += (_(u'Files:')+u' %s\n' % formatInteger(len(installer.fileSizeCrcs)),
+                     _(u'Files:')+u' N/A\n',)[isinstance(installer,bosh.InstallerMarker)]
+            info += (_(u'Configured:')+u' %s (%s KB)\n' % (
+                formatInteger(nConfigured), formatInteger(max(installer.unSize,1024)/1024 if installer.unSize else 0)),
+                     _(u'Configured:')+u' N/A\n',)[isinstance(installer,bosh.InstallerMarker)]
+            info += (_(u'  Matched:')+u' %s\n' % formatInteger(nConfigured-nMissing-nMismatched),
+                     _(u'  Matched:')+u' N/A\n',)[isinstance(installer,bosh.InstallerMarker)]
+            info += (_(u'  Missing:')+u' %s\n' % formatInteger(nMissing),
+                     _(u'  Missing:')+u' N/A\n',)[isinstance(installer,bosh.InstallerMarker)]
+            info += (_(u'  Conflicts:')+u' %s\n' % formatInteger(nMismatched),
+                     _(u'  Conflicts:')+u' N/A\n',)[isinstance(installer,bosh.InstallerMarker)]
+            info += '\n'
+            #--Infoboxes
+            gPage.SetValue(info+dumpFiles(installer,installer.data_sizeCrc,sNone,
+                u'== '+_(u'Configured Files'),isPath=True))
+        elif pageName == 'gMatched':
+            gPage.SetValue(dumpFiles(installer,set(installer.data_sizeCrc)
+                - installer.missingFiles - installer.mismatchedFiles,isPath=True))
+        elif pageName == 'gMissing':
+            gPage.SetValue(dumpFiles(installer,installer.missingFiles,isPath=True))
+        elif pageName == 'gMismatched':
+            gPage.SetValue(dumpFiles(installer,installer.mismatchedFiles,sNone,isPath=True))
+        elif pageName == 'gConflicts':
+            gPage.SetValue(self.data.getConflictReport(installer,'OVER'))
+        elif pageName == 'gUnderrides':
+            gPage.SetValue(self.data.getConflictReport(installer,'UNDER'))
+        elif pageName == 'gDirty':
+            gPage.SetValue(dumpFiles(installer,installer.dirty_sizeCrc,isPath=True))
+        elif pageName == 'gSkipped':
+            gPage.SetValue(u'\n'.join((
+                dumpFiles(installer,installer.skipExtFiles,sNone,u'== '+_(u'Skipped (Extension)')),
+                dumpFiles(installer,installer.skipDirFiles,sNone,u'== '+_(u'Skipped (Dir)')),
+                )) or sNone)
+
+    #--Config
+    def refreshCurrent(self, installer):
+        """Refreshes current item while retaining scroll positions."""
+        installer.refreshDataSizeCrc()
+        installer.refreshStatus(self.data)
+
+        # Save scroll bar positions, because gList.RefreshUI will
+        subScrollPos  = self.gSubList.GetScrollPos(wx.VERTICAL)
+        espmScrollPos = self.gEspmList.GetScrollPos(wx.VERTICAL)
+        subIndices = self.gSubList.GetSelections()
+
+        self.uiList.RefreshUI(files=[self.detailsItem])
+        for subIndex in subIndices:
+            self.gSubList.SetSelection(subIndex)
+
+        # Reset the scroll bars back to their original position
+        subScroll = subScrollPos - self.gSubList.GetScrollPos(wx.VERTICAL)
+        self.gSubList.ScrollLines(subScroll)
+
+        espmScroll = espmScrollPos - self.gEspmList.GetScrollPos(wx.VERTICAL)
+        self.gEspmList.ScrollLines(espmScroll)
+
+    def OnShowInfoPage(self, event):
+        """A specific info page has been selected."""
+        if event.GetId() == self.gNotebook.GetId():
+            index = event.GetSelection()
+            gPage,initialized = self.infoPages[index]
+            if self.detailsItem and not initialized:
+                self.RefreshInfoPage(index,self.data[self.detailsItem])
+            event.Skip()
+
+    def OnCheckSubItem(self, event):
+        """Handle check/uncheck of item."""
+        installer = self.data[self.detailsItem]
+        index = event.GetSelection()
+        self.gSubList.SetSelection(index)
+        for index in range(self.gSubList.GetCount()):
+            installer.subActives[index+1] = self.gSubList.IsChecked(index)
+        if not balt.getKeyState_Shift():
+            self.refreshCurrent(installer)
+
+    def SelectionMenu(self, event):
+        """Handle right click in espm list."""
+        x = event.GetX()
+        y = event.GetY()
+        selected = self.gEspmList.HitTest((x,y))
+        self.gEspmList.SetSelection(selected)
+        #--Show/Destroy Menu
+        ### InstallersPanel.espmMenu.PopupMenu(self, Link.Frame, selected)
+        InstallersPanel.espmMenu.PopupMenu(self.installersPanel, Link.Frame, selected)
+        ## InstallersDetails.espmMenu.PopupMenu(self, Link.Frame, selected)
+
+    def SubsSelectionMenu(self, event):
+        """Handle right click in espm list."""
+        x = event.GetX()
+        y = event.GetY()
+        selected = self.gSubList.HitTest((x,y))
+        self.gSubList.SetSelection(selected)
+        #--Show/Destroy Menu
+        ### InstallersPanel.subsMenu.PopupMenu(self, Link.Frame, selected)
+        InstallersPanel.subsMenu.PopupMenu(self.installersPanel, Link.Frame, selected)
+        ## InstallersDetails.subsMenu.PopupMenu(self, Link.Frame, selected)
+
+    def OnCheckEspmItem(self, event):
+        """Handle check/uncheck of item."""
+        installer = self.data[self.detailsItem]
+        espmNots = installer.espmNots
+        index = event.GetSelection()
+        name = self.gEspmList.GetString(index).replace('&&','&')
+        if name[0] == u'*':
+            name = name[1:]
+        espm = GPath(name)
+        if self.gEspmList.IsChecked(index):
+            espmNots.discard(espm)
+        else:
+            espmNots.add(espm)
+        self.gEspmList.SetSelection(index)  # so that (un)checking also selects (moves the highlight)
+        if not balt.getKeyState_Shift():
+            self.refreshCurrent(installer)
+
+#------------------------------------------------------------------------------
 class InstallersPanel(SashTankPanel):
     """Panel for InstallersTank."""
     espmMenu = Links()
