@@ -2843,87 +2843,17 @@ class InstallersPanel(SashTankPanel):
         data = bosh.InstallersData()
         SashTankPanel.__init__(self, data, parent)
         left, right = self.left, self.right
-        ### self.commentsSplitter = commentsSplitter = \
-        ###     wx.gizmos.ThinSplitterWindow(right, style=splitterStyle)
-        ### subSplitter = wx.gizmos.ThinSplitterWindow(commentsSplitter, style=splitterStyle)
-        ### checkListSplitter = wx.gizmos.ThinSplitterWindow(subSplitter, style=splitterStyle)
         #--Refreshing
         self.refreshed = False
         self.refreshing = False
         self.frameActivated = False
-        # self.fullRefresh = False
+        #??? self.fullRefresh = False
         #--Contents
-        ### self.detailsPanel = self # YAK
         self.uiList = InstallersList(left, data=data, keyPrefix=self.keyPrefix,
                                      panel=self)
         self.detailsPanel = InstallersDetails(right)
-        ### #--Package
-        ### self.gPackage = roTextCtrl(right, noborder=True)
-        ### self.gPackage.HideNativeCaret()
-        ### #--Info Tabs
-        ### self.gNotebook = wx.Notebook(subSplitter,style=wx.NB_MULTILINE)
-        ### self.gNotebook.SetSizeHints(100,100)
-        ### self.infoPages = []
-        ### infoTitles = (
-        ###     ('gGeneral',_(u'General')),
-        ###     ('gMatched',_(u'Matched')),
-        ###     ('gMissing',_(u'Missing')),
-        ###     ('gMismatched',_(u'Mismatched')),
-        ###     ('gConflicts',_(u'Conflicts')),
-        ###     ('gUnderrides',_(u'Underridden')),
-        ###     ('gDirty',_(u'Dirty')),
-        ###     ('gSkipped',_(u'Skipped')),
-        ###     )
-        ### for name,title in infoTitles:
-        ###     gPage = roTextCtrl(self.gNotebook, name=name, hscroll=True,
-        ###                        autotooltip=False)
-        ###     self.gNotebook.AddPage(gPage,title)
-        ###     self.infoPages.append([gPage,False])
-        ### self.gNotebook.SetSelection(settings['bash.installers.page'])
-        ### self.gNotebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED,self.OnShowInfoPage)
-        ### #--Sub-Installers
-        ### subPackagesPanel = wx.Panel(checkListSplitter)
-        ### subPackagesLabel = staticText(subPackagesPanel, _(u'Sub-Packages'))
-        ### self.gSubList = balt.listBox(subPackagesPanel, isExtended=True,
-        ###                              kind='checklist')
-        ### self.gSubList.Bind(wx.EVT_CHECKLISTBOX,self.OnCheckSubItem)
-        ### self.gSubList.Bind(wx.EVT_RIGHT_UP,self.SubsSelectionMenu)
-        ### #--Espms
-        ### espmsPanel = wx.Panel(checkListSplitter)
-        ### espmsLabel = staticText(espmsPanel, _(u'Esp/m Filter'))
-        ### self.espms = []
-        ### self.gEspmList = balt.listBox(espmsPanel, isExtended=True,
-        ###                               kind='checklist')
-        ### self.gEspmList.Bind(wx.EVT_CHECKLISTBOX,self.OnCheckEspmItem)
-        ### self.gEspmList.Bind(wx.EVT_RIGHT_UP,self.SelectionMenu)
-        ### #--Comments
-        ### commentsPanel = wx.Panel(commentsSplitter)
-        ### commentsLabel = staticText(commentsPanel, _(u'Comments'))
-        ### self.gComments = textCtrl(commentsPanel, multiline=True)
-        ### #--Splitter settings
-        ### checkListSplitter.SetMinimumPaneSize(50)
-        ### checkListSplitter.SplitVertically(subPackagesPanel, espmsPanel)
-        ### checkListSplitter.SetSashGravity(0.5)
-        ### subSplitter.SetMinimumPaneSize(50)
-        ### subSplitter.SplitHorizontally(self.gNotebook, checkListSplitter)
-        ### subSplitter.SetSashGravity(0.5)
-        ### commentsHeight = self.gPackage.GetSize()[1]
-        ### commentsSplitter.SetMinimumPaneSize(commentsHeight)
-        ### commentsSplitter.SplitHorizontally(subSplitter, commentsPanel)
-        ### commentsSplitter.SetSashGravity(1.0)
-        ### #--Layout
-        ### subPackagesSizer = vSizer(subPackagesLabel, (self.gSubList,1,wx.EXPAND,2))
-        ### subPackagesSizer.SetSizeHints(subPackagesPanel)
-        ### subPackagesPanel.SetSizer(subPackagesSizer)
-        ### espmsSizer = vSizer(espmsLabel, (self.gEspmList,1,wx.EXPAND,2))
-        ### espmsSizer.SetSizeHints(espmsPanel)
-        ### espmsPanel.SetSizer(espmsSizer)
-        ### commentsSizer = vSizer(commentsLabel, (self.gComments,1,wx.EXPAND,2))
-        ### commentsSizer.SetSizeHints(commentsPanel)
-        ### commentsPanel.SetSizer(commentsSizer)
+        #--Layout
         rightSizer = vSizer(
-            ### (self.gPackage,0,wx.GROW|wx.TOP|wx.LEFT,2),
-            ### (commentsSplitter,1,wx.EXPAND,2))
             (self.detailsPanel, 1, wx.EXPAND))
         rightSizer.SetSizeHints(right)
         right.SetSizer(rightSizer)
@@ -2933,12 +2863,6 @@ class InstallersPanel(SashTankPanel):
             )
         left.SetSizer(leftSizer)
         wx.LayoutAlgorithm().LayoutWindow(self, left)
-        ### commentsSplitterSavedSashPos = settings.get('bash.installers.commentsSplitterSashPos', 0)
-        ### # restore saved comments text box size
-        ### if 0 == commentsSplitterSavedSashPos:
-        ###     commentsSplitter.SetSashPosition(-commentsHeight)
-        ### else:
-        ###     commentsSplitter.SetSashPosition(commentsSplitterSavedSashPos)
 
     def __init__(self,parent):
         """Initialize."""
