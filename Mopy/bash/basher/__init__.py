@@ -2582,6 +2582,10 @@ class InstallersDetails(_SashDetailsPanel):
         self.detailsItem = self.installersPanel.detailsItem
         return self.installersPanel.GetDetailsItem()
 
+    def GetInstaller(self):
+        installer = self.data[self.detailsItem]
+        return installer
+
     #--Details view (if it exists)
     def SaveDetails(self):  # HELP should this def be here or in InstallersPanel class?
         """Saves details if they need saving."""

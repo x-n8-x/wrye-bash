@@ -327,22 +327,23 @@ def InitInstallerLinks():
     InstallersPanel.subsMenu.append(Installer_Subs_ToggleSelection())
     InstallersPanel.subsMenu.append(SeparatorLink())
     InstallersPanel.subsMenu.append(Installer_Subs_ListSubPackages())
-    ## MCOW #--espms Main Menu
-    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_SelectAll())
-    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_DeselectAll())
-    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_List())
-    ## MCOW InstallersDetails.espmMenu.append(SeparatorLink())
-    ## MCOW #--espms Item Menu
-    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_Rename())
-    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_Reset())
-    ## MCOW InstallersDetails.espmMenu.append(SeparatorLink())
-    ## MCOW InstallersDetails.espmMenu.append(Installer_Espm_ResetAll())
-    ## MCOW #--Sub-Package Main Menu
-    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_SelectAll())
-    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_DeselectAll())
-    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_ToggleSelection())
-    ## MCOW InstallersDetails.subsMenu.append(SeparatorLink())
-    ## MCOW InstallersDetails.subsMenu.append(Installer_Subs_ListSubPackages())
+    # MCOW
+    #--espms Main Menu
+    InstallersDetails.espmMenu.append(Installer_Espm_SelectAll())
+    InstallersDetails.espmMenu.append(Installer_Espm_DeselectAll())
+    InstallersDetails.espmMenu.append(Installer_Espm_List())
+    InstallersDetails.espmMenu.append(SeparatorLink())
+    #--espms Item Menu
+    InstallersDetails.espmMenu.append(Installer_Espm_Rename())
+    InstallersDetails.espmMenu.append(Installer_Espm_Reset())
+    InstallersDetails.espmMenu.append(SeparatorLink())
+    InstallersDetails.espmMenu.append(Installer_Espm_ResetAll())
+    #--Sub-Package Main Menu
+    InstallersDetails.subsMenu.append(Installer_Subs_SelectAll())
+    InstallersDetails.subsMenu.append(Installer_Subs_DeselectAll())
+    InstallersDetails.subsMenu.append(Installer_Subs_ToggleSelection())
+    InstallersDetails.subsMenu.append(SeparatorLink())
+    InstallersDetails.subsMenu.append(Installer_Subs_ListSubPackages())
     
     
 #------------------------------------------------------------------------------
