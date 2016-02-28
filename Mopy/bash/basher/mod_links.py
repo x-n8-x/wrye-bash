@@ -2350,6 +2350,11 @@ class Mod_EditorIds_Import(_Mod_Import_Link):
             self._showError(_(u'Source file must be a csv file.'))
             return
         #--Import
+        # TODO(Iaz3): Figure out whats going on here and how to get it to
+        # use common execute? Or treat it like teh scripts one, as a special
+        # case?
+        # FIXME(Iaz3): AHA, it doesnt use the _import method. But it also
+        # uses some other variables. This is tricky.
         questionableEidsSet = set()
         badEidsList = []
         try:
