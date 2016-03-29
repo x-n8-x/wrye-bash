@@ -285,7 +285,7 @@ def monitor(sleepSeconds=0.25):
         except IOError:
             print time.strftime('\n%H:%M:%S',time.localtime()),_(u"Oblivion.ini is busy.")
             continue
-        except:
+        except Exception:
             data.failed.touch()
             traceback.print_exc()
             running = False
@@ -311,7 +311,7 @@ def monitor(sleepSeconds=0.25):
             while data.completed.exists():
                 time.sleep(0.1)
             data.setSignals()
-        except:
+        except Exception:
             print u' ',_(u'Failed')+u'\n'
             data.failed.touch()
             traceback.print_exc()

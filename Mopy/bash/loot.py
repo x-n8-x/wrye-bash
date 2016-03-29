@@ -132,7 +132,7 @@ def Init(path):
         verPatch = c_uint()
         try:
             LootApi.loot_is_compatible(byref(verMajor), byref(verMinor), byref(verPatch))
-        except:
+        except Exception:
             raise LootVersionError('loot.py is not compatible with the specified LOOT DLL (%i.%i.%i).' % verMajor % verMinor % verPatch)
 
     # =========================================================================

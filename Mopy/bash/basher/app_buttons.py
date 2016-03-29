@@ -269,7 +269,7 @@ class App_Button(StatusBar_Button):
                         import win32api
                         win32api.ShellExecute(0,'runas', exePath.s,u'%s' % self.exeArgs,
                                               bass.dirs['app'].s, 1)
-                    except:
+                    except Exception:  # TODO(Iaz3): Could probably be ImportError
                         self.ShowError(werr)
                 except Exception as error:
                     self.ShowError(error)
@@ -678,7 +678,7 @@ class App_GenPickle(StatusBar_Button):
                 maxId = max(fids.values())
             else:
                 maxId = 0
-        except:
+        except Exception:
             fids = {}
             maxId = 0
         maxId = max(maxId, 0xf12345)

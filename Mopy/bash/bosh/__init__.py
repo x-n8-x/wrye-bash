@@ -520,7 +520,7 @@ class SaveHeader:
             self.pcLocation = decode(cstrip(self.pcLocation),bolt.pluginEncoding,avoidEncodings=('utf8','utf-8'))
             self.masters = [GPath(decode(x)) for x in self.masters]
         #--Errors
-        except:
+        except Exception:
             deprint(u'save file error:',traceback=True)
             raise SaveFileError(path.tail,u'File header is corrupted.')
 
@@ -569,7 +569,7 @@ class BSAHeader:
                 ins.seek(4*4)
                 (self.folderCount,self.fileCount,lenFolderNames,lenFileNames,fileFlags) = ins.unpack('5I',20)
             #--Errors
-            except:
+            except Exception:
                 raise BSAFileError(path.tail,u'File header is corrupted.')
         #--Done
 
@@ -2552,7 +2552,7 @@ class ModInfo(FileInfo):
                         try:
                             bsaFile = libbsa.BSAHandle(path)
                             bsaFiles[path] = bsaFile
-                        except:
+                        except Exception:
                             deprint(u'   Error loading BSA file:',path.stail,traceback=True)
                             continue
                     if bsaFile.IsAssetInBSA(file):
@@ -2628,7 +2628,7 @@ class ModInfo(FileInfo):
             else: ghost.moveTo(normal)
             self.isGhost = isGhost
             self.ctime = oldCtime
-        except:
+        except Exception:
             deprint(u'Failed to %sghost file %s' % ((u'un', u'')[isGhost],
                 (ghost.s, normal.s)[isGhost]), traceback=True)
         return self.isGhost
@@ -3468,7 +3468,7 @@ class ModInfos(FileInfos):
                     #deprint(fileInfo.name, oldMTime - fileInfo.mtime)
                     fileInfo.setmtime(oldMTime)
                     self.mtimesReset.append(fileName)
-        except:
+        except Exception:
             self.mtimesReset = [u'FAILED',fileName]
 
     def autoGhost(self,force=False):
@@ -3893,7 +3893,7 @@ class ModInfos(FileInfos):
                         try:
                             bsaFile = libbsa.BSAHandle(path)
                             bsaFiles[path] = bsaFile
-                        except:
+                        except Exception:
                             continue
                     if bsaFile.IsAssetInBSA(assetPath):
                         found = True
@@ -5397,7 +5397,7 @@ class InstallerArchive(Installer):
             try:
                 bolt.list_archive(tempArch, _parse_archive_line)
                 self.crc = _li.cumCRC & 0xFFFFFFFFL
-            except:
+            except Exception:
                 archive_msg = u"Unable to read archive '%s'." % archive.s
                 deprint(archive_msg, traceback=True)
                 raise InstallerArchiveError(archive_msg)
@@ -5545,7 +5545,7 @@ class InstallerArchive(Installer):
             try:
                 self.unpackToTemp(GPath(self.archive), [self.hasWizard])
                 self.getTempDir().join(self.hasWizard).start()
-            except:
+            except Exception:
                 # Don't clean up temp dir here.  Sometimes the editor
                 # That starts to open the wizard.txt file is slower than
                 # Bash, and the file will be deleted before it opens.
@@ -6287,7 +6287,7 @@ class InstallersData(_DataStore):
         log = None
         if inisettings['KeepLog'] > 1:
             try: log = inisettings['LogFile'].open('a', encoding='utf-8-sig')
-            except: pass
+            except Exception: pass
         setSkipOBSE = not settings['bash.installers.allowOBSEPlugins']
         setSkipDocs = settings['bash.installers.skipDocs']
         setSkipImages = settings['bash.installers.skipImages']
@@ -6572,8 +6572,9 @@ class InstallersData(_DataStore):
             if removedPlugins:
                 refresh_ui[0] = True
                 modInfos.delete(removedPlugins, doRefresh=False, recycle=False)
-        except (bolt.CancelError, bolt.SkipError): ex = sys.exc_info()
-        except:
+        except (bolt.CancelError, bolt.SkipError):
+            ex = sys.exc_info()
+        except Exception:
             ex = sys.exc_info()
             raise
         finally:
@@ -6738,7 +6739,7 @@ class InstallersData(_DataStore):
                     else: continue # don't pop if file was not removed
                 data_sizeCrcDate.pop(file,None)
                 emptyDirs.add(path.head)
-            except:
+            except Exception:
                 # It's not imperative that files get moved, so ignore errors
                 deprint(u'Clean Data: moving %s to % s failed' % (
                             path, destDir), traceback=True)
@@ -6775,7 +6776,7 @@ class InstallersData(_DataStore):
             try:
                 bsas = [(x, libbsa.BSAHandle(dirs['mods'].join(x.s))) for x in activeSrcBSAFiles]
 #                print("BSA Paths: {}".format(bsas))
-            except:
+            except Exception:
                 deprint(u'   Error loading BSA srcFiles: ',activeSrcBSAFiles,traceback=True)
             # Create list of all assets in BSA files for srcInstaller
             srcBSAContents = []
@@ -7381,7 +7382,7 @@ def initDirs(bashIni, personal, localAppData):
             # these are relative to the mods path so they must be updated too
             dirs['patches'] = dirs['mods'].join(u'Bash Patches')
             dirs['tweaks'] = dirs['mods'].join(u'INI Tweaks')
-    except:
+    except Exception:
         # Error accessing folders for Oblivion.ini
         # We'll show an error later
         pass
@@ -7502,7 +7503,7 @@ def initDefaultTools():
                 try:
                     key = winreg.OpenKey(hkey,u'Software\\%sBoss' % wow6432)
                     value = winreg.QueryValueEx(key,u'Installed Path')
-                except:
+                except Exception:
                     continue
                 if value[1] != winreg.REG_SZ: continue
                 installedPath = GPath(value[0])

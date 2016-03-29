@@ -286,17 +286,21 @@ def dumpTranslator(outPath,language,*files):
                         continue
                     else:
                         outWrite(line)
-    except:
-        try: os.remove(tmpTxt)
-        except: pass
+    except Exception:
+        try:
+            os.remove(tmpTxt)
+        except OSError:  # TODO(Iaz3): Should be sage since os module.
+            pass
     else:
         try:
             os.remove(fullTxt)
             os.rename(tmpTxt,fullTxt)
-        except:
+        except OSError:  # TODO(iaz3): Same reason as aboe
             if os.path.exists(fullTxt):
-                try: os.remove(tmpTxt)
-                except: pass
+                try:
+                    os.remove(tmpTxt)
+                except OSError:  # TODO(Iaz3): Above.
+                    pass
     return outTxt
 
 def initTranslator(language=None,path=None):
@@ -335,7 +339,7 @@ def initTranslator(language=None,path=None):
             # install translator
             with open(mo,'rb') as file:
                 trans = gettext.GNUTranslations(file)
-        except:
+        except Exception:
             print 'Error loading translation file:'
             traceback.print_exc()
             trans = gettext.NullTranslations()
@@ -694,7 +698,7 @@ class Path(object):
                     return GPath(tempfile.mkdtemp(
                         prefix=prefix.encode(Path.sys_fs_enc)).decode(
                         Path.sys_fs_enc))
-                except:
+                except Exception:
                     traceback.print_exc()
                     print 'Failed to create tmp dir, Bash will not function ' \
                           'correctly.'
@@ -775,7 +779,9 @@ class Path(object):
             ms = info['FileVersionMS']
             ls = info['FileVersionLS']
             version = (win32api.HIWORD(ms),win32api.LOWORD(ms),win32api.HIWORD(ls),win32api.LOWORD(ls))
-        except:
+        except Exception:
+            # TODO(Iaz3): Probably should be ImportError, since it's testing
+            # for windows file properties and using win32api which obviously wont be on windows.
             version = (0,0,0,0)
         return version
 
@@ -883,11 +889,15 @@ class Path(object):
                 for root,dirs,files in os.walk(self._s):
                     rootJoin = root.join
                     for dir in dirs:
-                        try: chmod(rootJoin(dir),flags)
-                        except: pass
+                        try:
+                            chmod(rootJoin(dir),flags)
+                        except OSError:  # TODO(Iaz3): Should be fine since it's from os
+                            pass
                     for file in files:
-                        try: chmod(rootJoin(file),flags)
-                        except: pass
+                        try:
+                            chmod(rootJoin(file),flags)
+                        except OSError:  # TODO(Iaz3): Above
+                            pass
 
     def open(self,*args,**kwdargs):
         if self._shead and not os.path.exists(self._shead):
@@ -1001,14 +1011,14 @@ class Path(object):
         try:
             with open(self._s,'ab') as f:
                 return True
-        except:
+        except Exception:
             return False
         finally:
             # If the file didn't exist before, remove the created version
             if delete:
                 try:
                     os.remove(self._s)
-                except:
+                except OSError: # TODO(Iaz3): Should be fine since os
                     pass
 
     #--Hash/Compare, based on the _cs attribute so case insensitive. NB: Paths
@@ -2306,13 +2316,13 @@ class StringTable(dict):
                             value = unicode(value,backupEncoding)
                         insSeek(pos)
                         self[id_] = value
-                    except:
+                    except Exception:
                         deprint(u'Error reading string file:')
                         deprint(u'id:', id_)
                         deprint(u'offset:', offset)
                         deprint(u'filePos:',  insTell())
                         raise
-        except:
+        except Exception:
             deprint(u'Error loading string file:', path.stail, traceback=True)
             return
 
@@ -2430,7 +2440,7 @@ class WryeText:
         def subCode(match):
             try:
                 return u' '.join(codebox([match.group(1)],False,False))
-            except:
+            except Exception:
                 return match(1)
         #--Misc. text
         reHr = re.compile(u'^------+$',re.U)
@@ -2528,7 +2538,7 @@ class WryeText:
                         outLinesAppend(u'<pre style="width:850px;">')
                         try:
                             codeboxLines = codebox(codeboxLines)
-                        except:
+                        except Exception:
                             pass
                         outLinesExtend(codeboxLines)
                         outLinesAppend(u'</pre>\n')
@@ -2542,7 +2552,7 @@ class WryeText:
                     outLines.append(u'<pre style="width:850px;">')
                     try:
                         outLinesExtend(codebox([maCodeBox.group(1)]))
-                    except:
+                    except Exception:
                         outLinesAppend(maCodeBox.group(1))
                     outLinesAppend(u'</pre>\n')
                     continue
@@ -2557,7 +2567,7 @@ class WryeText:
                         codeLines.append(maCodeEnd.group(1))
                         try:
                             codeLines = codebox(codeLines,False)
-                        except:
+                        except Exception:
                             pass
                         outLinesExtend(codeLines)
                         codeLines = None

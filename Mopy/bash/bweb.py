@@ -121,7 +121,7 @@ class Nexus:
                 line = maFileVersion.group(2)
                 try:
                     currentVersion = tuple([int(x) for x in currentVersion.split(u'.')])
-                except:
+                except Exception:
                     currentVersion = None
             maFileEnd = reFileEnd.match(line)
             if maFileEnd:

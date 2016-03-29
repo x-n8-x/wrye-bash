@@ -1725,7 +1725,7 @@ class ScriptText:
                     try:
                         modName,FormID,eid = lines[0][1:-2],lines[1][1:-2], \
                                              lines[2][1:-2]
-                    except:
+                    except Exception:
                         deprint(
                             _(u"%s has malformed script header lines - was "
                               u"skipped") % name)
@@ -4010,7 +4010,7 @@ class ModFile(object):
                     else:
                         self.topsSkipped.add(label)
                         insSeek(size-header.__class__.size,1,type + '.' + label)
-                except:
+                except Exception:
                     print u'Error in',self.fileInfo.name.s
                     deprint(u' ',traceback=True)
                     break

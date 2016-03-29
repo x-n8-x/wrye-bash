@@ -191,7 +191,7 @@ def _get_app_links(apps_dir):
                 links[lnk] = (shortcut.TargetPath, shortcut.WorkingDirectory,
                               shortcut.Arguments, shortcut.IconLocation,
                               description)
-    except:
+    except Exception:
         deprint(_(u"Error initializing links:"), traceback=True)
     return links
 
@@ -211,7 +211,7 @@ def init_app_links(apps_dir, badIcons, iconList):
                     try:
                         win32gui.ExtractIcon(0, target.s, 0)
                         icon = target
-                    except:
+                    except Exception:
                         icon = u'' # Icon will be set to a red x further down.
                 else:
                     icon, idex = get_default_app_icon(idex, target)
@@ -481,8 +481,10 @@ def shellDelete(files, parent=None, confirm=False, recycle=False):
 def shellDeletePass(folder, parent=None):
     """Delete tmp dirs/files - ignore errors (but log them)."""
     if folder.exists():
-        try: shellDelete(folder, parent=parent, confirm=False, recycle=False)
-        except: deprint(u"Error deleting %s:" % folder, traceback=True)
+        try:
+            shellDelete(folder, parent=parent, confirm=False, recycle=False)
+        except Exception:
+            deprint(u"Error deleting %s:" % folder, traceback=True)
 
 def shellMove(filesFrom, filesTo, parent=None, askOverwrite=False,
               allowUndo=False, autoRename=False, silent=False):
@@ -516,7 +518,7 @@ def shellMakeDirs(dirs, parent=None):
             # to shellMove if UAC or something else stopped it
             try:
                 folder.makedirs()
-            except:
+            except OSError:  # TODO(Iaz3): Should be OSError, since this is from the os module.
                 # Failed, try the UAC workaround
                 tmpDir = Path.tempDir()
                 tempDirs.append(tmpDir)

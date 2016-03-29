@@ -87,7 +87,7 @@ class Mod_FullLoad(OneItemLink):
             modFile = parsers.ModFile(bosh.modInfos[fileName], loadFactory)
             try:
                 modFile.load(True,progress)
-            except:
+            except Exception:
                 deprint('exception:\n', traceback=True)
 
 # File submenu ----------------------------------------------------------------

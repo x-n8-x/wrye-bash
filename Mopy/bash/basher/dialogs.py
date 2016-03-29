@@ -489,7 +489,7 @@ class CreateNewProject(balt.Dialog):
             env.shellMove(tempProject, projectDir, parent=self)
             # Move successful
             BashFrame.iPanel.ShowPanel(canCancel=False)
-        except:
+        except Exception:
             pass
         finally:
             tmpDir.rmtree(tmpDir.s)

@@ -436,7 +436,7 @@ class Parser(object):
 
             fn += u']'
             return eval(fn)
-        except:
+        except Exception:  # TODO(Iaz3): It says index error, so make it that?
             error(_(u'IndexError'))
 
     def SetOperator(self, name, *args, **kwdargs):

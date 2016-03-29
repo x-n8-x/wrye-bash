@@ -1262,7 +1262,7 @@ class MelSet:
         for element in self.elements:
             try:
                 element.dumpData(record,out)
-            except:
+            except Exception:
                 bolt.deprint('error dumping data:',traceback=True)
                 print u'Dumping:',getattr(record,'eid',u'<<NO EID>>'),record.fid,element
                 for attr in record.__slots__:
@@ -1784,7 +1784,7 @@ class MreGmstBase(MelRecord):
                 import bosh # Late import to avoid circular imports
                 cls.Ids = cPickle.load(
                     bass.dirs['db'].join(fname).open())[cls.classType]
-            except:
+            except Exception:
                 old = bolt.deprintOn
                 bolt.deprintOn = True
                 bolt.deprint(u'Error loading %s:' % fname, traceback=True)

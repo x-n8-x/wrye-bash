@@ -271,13 +271,15 @@ class PatchDialog(balt.Dialog):
         except BoltError as error:
             balt.playSound(self.parent, bass.inisettings['SoundError'].s)
             balt.showError(self,u'%s'%error,_(u'Processing Error'))
-        except:
+        except Exception:
             balt.playSound(self.parent, bass.inisettings['SoundError'].s)
             raise
         finally:
             if self.doCBash:
-                try: patchFile.Current.Close()
-                except: pass
+                try:
+                    patchFile.Current.Close()
+                except Exception:
+                    pass
             if progress: progress.Destroy()
 
     def _save_pbash(self, patchFile, patch_name):
@@ -384,7 +386,8 @@ class PatchDialog(balt.Dialog):
                     try:
                         patcher.gTweakList.Check(index,item.isEnabled)
                         patcher.gTweakList.SetString(index,item.getListLabel())
-                    except: deprint(_(u'item %s not in saved configs') % item)
+                    except Exception:
+                        deprint(_(u'item %s not in saved configs') % item)
         self.SetOkEnable()
 
     def UpdateConfig(self, patchConfigs):

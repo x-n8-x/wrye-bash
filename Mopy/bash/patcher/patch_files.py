@@ -251,7 +251,7 @@ class PatchFile(_PFile, ModFile):
                 self.tes4.version = min(max(modFile.tes4.version, self.tes4.version),max(bush.game.esp.validHeaderVersions))
             except CancelError:
                 raise
-            except:
+            except Exception:
                 print _(u"MERGE/SCAN ERROR:"),modName.s
                 raise
         progress(progress.full,_(u'Load mods scanned.'))

@@ -602,7 +602,8 @@ class GraphicsPatcher(ImportPatcher):
                                 attr).modPath.lower() != value.modPath.lower():
                             break
                         continue
-                    except: break  # assume they are not equal (ie they
+                    except Exception:
+                        break  # assume they are not equal (ie they
                         # aren't __both__ NONE)
                 if record.__getattribute__(attr) != value: break
             else: continue
@@ -1314,7 +1315,7 @@ class CBash_NPCAIPackagePatcher(CBash_ImportPatcher):
                 if override:
                     try:
                         override.aiPackages = mergedPackages
-                    except:
+                    except Exception:
                         newMergedPackages = []
                         for pkg in mergedPackages:
                             if not pkg[0] is None: newMergedPackages.append(

@@ -775,7 +775,7 @@ class CBash_ContentsChecker(_AContentsChecker,CBash_Patcher):
                         else:
                             try:
                                 modName = longId[0].s
-                            except:
+                            except Exception:
                                 log(u'        . ' + _(
                                     u'Unloaded Object or Undefined Reference'))
                                 continue

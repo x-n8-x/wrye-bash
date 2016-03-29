@@ -818,7 +818,7 @@ class ModCleaner:
                                         insRead(size)
                     except bolt.CancelError:
                         raise
-                    except:
+                    except Exception:
                         deprint(u'Error scanning %s, file read pos: %i:\n' % (modInfo.name.s,ins.tell()),traceback=True)
                         udr = itm = fog = None
                 #--Done

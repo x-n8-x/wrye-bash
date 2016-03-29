@@ -188,7 +188,7 @@ class InstallerWizard(wiz.Wizard):
         if self.parser.bArchive:
             try:
                 self.parser.installer.rmTempDir()
-            except:
+            except Exception:  # TODO(Iaz3): Maybe OsError?
                 pass
         return self.ret
 #End of Installer Wizard
@@ -315,7 +315,7 @@ class PageSelect(PageInstaller):
             file = self.images[self.index]
             if file.exists() and not file.isdir():
                 file.start()
-        except:
+        except Exception:
             pass
 
     def Selection(self, index):
@@ -1040,44 +1040,44 @@ class WryeParser(ScriptParser.Parser):
     def opEc(self, l, r):
         try:
             return l.lower() == r.lower()
-        except:
+        except Exception:
             return l == r
     def opNE(self, l, r): return l != r
     def opNEc(self, l, r):
         try:
             return l.lower() != r.lower()
-        except:
+        except Exception:
             return l != r
     def opGE(self, l, r): return l >= r
     def opGEc(self, l, r):
         try:
             return l.lower() >= r.lower()
-        except:
+        except Exception:
             return l >= r
     def opG(self, l, r): return l > r
     def opGc(self, l, r):
         try:
             return l.lower() > r.lower()
-        except:
+        except Exception:
             return l > r
     def opLE(self, l, r): return l <= r
     def opLEc(self, l, r):
         try:
             return l.lower() <= r.lower()
-        except:
+        except Exception:
             return l <= r
     def opL(self, l, r): return l < r
     def opLc(self, l, r):
         try:
             return l.lower() < r.lower()
-        except:
+        except Exception:
             return l < r
     # Membership tests
     def opIn(self, l, r): return l in r
     def opInCase(self, l, r):
         try:
             l.lower() in r.lower()
-        except:
+        except Exception:
             return l in r
     # Boolean operators
     def opAnd(self, l, r): return l and r
@@ -1198,31 +1198,31 @@ class WryeParser(ScriptParser.Parser):
     def fnInt(self, data):
         try:
             return int(data)
-        except:
+        except Exception:
             return 0
     def fnFloat(self, data):
         try:
             return float(data)
-        except:
+        except Exception:
             return 0.0
     def fnLen(self, data):
         try:
             return len(data)
-        except:
+        except Exception:
             return 0
     def fnEndsWith(self, String, *args):
         if not isinstance(String, basestring):
             error(_(u"Function 'endswith' only operates on string types."))
         try:
             return String.endswith(args)
-        except:
+        except Exception:
             return False
     def fnStartsWith(self, String, *args):
         if not isinstance(String, basestring):
             error(_(u"Function 'startswith' only operates on string types."))
         try:
             return String.startswith(args)
-        except:
+        except Exception:
             return False
     def fnLower(self, String):
         if not isinstance(String, basestring):
@@ -1242,13 +1242,13 @@ class WryeParser(ScriptParser.Parser):
         try:
             path = bolt.Path(String)
             return path.stail
-        except:
+        except Exception:
             return u''
     def fnGetFolder(self, String):
         try:
             path = bolt.Path(String)
             return path.shead
-        except:
+        except Exception:
             return u''
 
     # Dummy keyword, for reserving a keyword, but handled by other keywords (like from, to, and by)
@@ -1382,7 +1382,7 @@ class WryeParser(ScriptParser.Parser):
                 name = self.ExecuteTokens(args[2:])
                 try:
                     subpackage = self.GetPackage(name)
-                except:
+                except Exception:
                     error(_(u"Subpackage '%s' does not exist.") % name)
                 if subpackage is None:
                     error(_(u"SubPackage '%s' does not exist.") % name)
@@ -1622,7 +1622,7 @@ class WryeParser(ScriptParser.Parser):
             geHave = u'None'
         try:
             bWBOk = float(wbHave) >= float(wbWant)
-        except:
+        except Exception:
             # Error converting to float, just assume it's OK
             bWBOk = True
 
@@ -1641,7 +1641,7 @@ class WryeParser(ScriptParser.Parser):
     def _TestVersion_Want(self, want):
         try:
             need = [int(i) for i in want.split(u'.')]
-        except:
+        except Exception:
             need = u'None'
         return need
     def _TestVersion(self, need, file):

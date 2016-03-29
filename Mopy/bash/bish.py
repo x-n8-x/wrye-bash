@@ -572,7 +572,7 @@ def makeOOO_NoGuildOwnership():
                         base = Current.LookupRecords(refr.base)
                         try:
                             base = base[0]
-                        except:
+                        except Exception:
                             continue
                         if base._Type in bosh.pickupables:
                             if base._Type == 'LIGH':
@@ -1204,7 +1204,7 @@ def createLSCR(*args):
                             recordId = long(parts[0],16)
                             if recordId < 0 or recordId > 0xFFFFFF:
                                 continue
-                        except:
+                        except Exception:
                             continue
                         masterName = bass.dirs['mods'].join(masterName)
                         self.fids_eids.append((cint.FormID(masterName.tail,recordId),eid))
@@ -1250,7 +1250,7 @@ def createLSCR(*args):
                             recordId = long(parts[0],16)
                             if recordId < 0 or recordId > 0xFFFFFF:
                                 continue
-                        except:
+                        except Exception:
                             continue
                         masterName = bass.dirs['mods'].join(masterName)
                         self.LNAM.append(cint.FormID(masterName.tail,recordId))
@@ -1569,7 +1569,7 @@ def create_sample_project(read_file=None,dest_path=None):
         dest_path = GPath(os.getcwd()).join("Test BAIN Project")
     try:
         ins = GPath(read_file).open("r")
-    except:
+    except Exception:
         read_file = GPath(os.getcwd()).join(read_file)
         ins = GPath(read_file).open("r")
     for path in ins:
@@ -1577,7 +1577,7 @@ def create_sample_project(read_file=None,dest_path=None):
         dest_file = dest_path.join(path[:-1])
         try:
             file = dest_file.open("w")
-        except:
+        except Exception:
             dest_dir = dest_path.shead()
             os.makedirs(dest_dir.s)
             file = dest_file.open("w")

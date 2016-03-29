@@ -124,7 +124,7 @@ def Init(path):
         verPatch = c_uint()
         try:
             _libbsa.bsa_get_version(byref(verMajor), byref(verMinor), byref(verPatch))
-        except:
+        except Exception:
             raise LibbsaVersionError(
                 'libbsa.py is not compatible with the specified libbsa DLL ('
                 '%i.%i.%i).' % verMajor % verMinor % verPatch)

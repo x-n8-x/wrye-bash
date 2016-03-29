@@ -2314,7 +2314,7 @@ class InstallersList(balt.UIList):
                     # Omod extraction was cancelled, or user denied admin
                     # rights if needed
                     raise
-                except:
+                except Exception:
                     deprint(
                         _(u"Failed to extract '%s'.") % omod.stail + u'\n\n',
                         traceback=True)
@@ -2743,7 +2743,7 @@ class InstallersPanel(SashTankPanel):
                     omodRemoves.add(omod)
                 except (CancelError, SkipError):
                     omodMoves.add(omod)
-                except:
+                except Exception:
                     deprint(_(u"Error extracting OMOD '%s':") % omod.stail,
                             traceback=True)
                     # Ensure we don't infinitely refresh if moving the omod
@@ -3577,7 +3577,7 @@ class BashNotebook(wx.Notebook, balt.TabDragMixin):
                 item = panel(self)
                 self.AddPage(item,title)
                 tabInfo[page][2] = item
-            except:
+            except Exception:
                 if page == 'Mods':
                     deprint(_(u"Fatal error constructing '%s' panel.") % title)
                     raise
@@ -3822,7 +3822,7 @@ class BashStatusBar(wx.StatusBar):
             button = self.buttons[self.dragging]
             try:
                 button.ReleaseMouse()
-            except:
+            except Exception:
                 pass
             # -*- Hacky code! -*-
             # Since we've got to CaptureMouse to do DnD properly,
@@ -4187,7 +4187,7 @@ class BashFrame(wx.Frame):
         try:
             self.BindRefresh(bind=False)
             self.SaveSettings()
-        except: ##: this has swallowed exceptions since forever
+        except Exception: ##: this has swallowed exceptions since forever
                 deprint(_(u'An error occurred while trying to save settings:'),
                         traceback=True)
         finally:
@@ -4208,7 +4208,7 @@ class BashFrame(wx.Frame):
         for index in range(self.notebook.GetPageCount()):
             try:
                 self.notebook.GetPage(index).ClosePanel()
-            except:
+            except Exception:
                 deprint(_(u'An error occurred while trying to save settings:'),
                         traceback=True)
         settings.save()
@@ -4298,11 +4298,11 @@ class BashApp(wx.App):
         # Is splash enabled in ini ?
         if bass.inisettings['EnableSplashScreen']:
             if bass.dirs['images'].join(u'wryesplash.png').exists():
-                try:
-                        splashScreen = WryeBashSplashScreen()
-                        splashScreen.Show()
-                except:
-                        pass
+                try:  # FIXME(Iaz3): For some reason these were too indented..
+                    splashScreen = WryeBashSplashScreen()
+                    splashScreen.Show()
+                except Exception:
+                    pass
         #--Constants
         self.InitResources()
         #--Init Data

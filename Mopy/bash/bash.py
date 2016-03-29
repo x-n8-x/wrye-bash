@@ -186,7 +186,7 @@ def exit():
                     file_.rmtree(safety=file_.stail)
                 else:
                     file_.remove()
-            except:
+            except Exception: # TODO(Iaz3): Could maybe be OSError?
                 pass
 
     if basher:
@@ -327,7 +327,7 @@ def main():
                 # First try using wxPython
                 # raise BoltError("TEST TINKER")
                 retCode = _wxSelectGame(ret, msgtext)
-            except:
+            except Exception:  # TODO(Iaz3): . Could probably be import error.
                 # No good with wxPython, use Tkinter instead ##: what use ?
                 retCode = _tinkerSelectGame(ret, msgtext)
             if retCode is None:
@@ -452,7 +452,7 @@ def _showErrorInGui(e):
         app = basher.BashApp(redirect=bolt.deprintOn and not hasattr(sys, 'frozen'))
         balt.showError(None, msg, title=title)
         app.MainLoop()
-    except:
+    except Exception:
         traceback.print_exc() # print current exception then
         # try really hard to be able to show the error in any GUI
         try:
@@ -464,7 +464,7 @@ def _showErrorInGui(e):
                   'display the first error:'
             try:
                 traceback.print_exc()
-            except:
+            except Exception:
                 print '  An error occurred while trying to display the' \
                       ' second error.'
             print 'The following is the error that could not be displayed:'

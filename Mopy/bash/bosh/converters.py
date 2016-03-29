@@ -162,7 +162,7 @@ class ConvertersData(DataDict):
             #--Adding a new file
             try:
                 newConverter = InstallerConverter(converter)
-            except:
+            except Exception:
                 fullPath = converters_dir.join(converter)
                 fullPath.moveTo(self.corrupt_bcfs_dir.join(converter.tail))
                 del self.bcfPath_sizeCrcDate[fullPath]
@@ -370,8 +370,10 @@ class InstallerConverter(object):
             #--That is done by the calling code, since it requires an
             # InstallerArchive object to work on
         finally:
-            try: tmpDir.rmtree(safety=tmpDir.s)
-            except: pass
+            try:
+                tmpDir.rmtree(safety=tmpDir.s)
+            except Exception:
+                pass
             Installer.rmTempDir()
 
     def applySettings(self, destInstaller):

@@ -64,7 +64,7 @@ try:
         else:
             kwdargs['encoding'] = bolt.pluginEncoding
         return _uni(text,*args,**kwdargs)
-except:
+except Exception:
     #It isn't, so replace the imported items with bare definitions
     CBashEnabled = "."
     class Path(object):
@@ -177,7 +177,7 @@ try:
 except (AttributeError,ImportError,OSError) as error:
     CBash = None
     print error
-except:
+except Exception:
     CBash = None
     raise
 
@@ -3046,7 +3046,7 @@ class FnvBaseRecord(object):
         for attr, value in skipped_conflicting:
             try:
                 deprint(_(u"%s attribute of %s record (maybe named: %s) importing from %s referenced an unloaded object (probably %s) - value skipped") % (attr, self.fid, self.full, self.GetParentMod().GName, value))
-            except: #a record type that doesn't have a full chunk:
+            except Exception: #a record type that doesn't have a full chunk:
                 deprint(_(u"%s attribute of %s record importing from %s referenced an unloaded object (probably %s) - value skipped") % (attr, self.fid, self.GetParentMod().GName, value))
             del conflicting[attr]
 
@@ -10641,7 +10641,7 @@ class ObBaseRecord(object):
         for attr, value in skipped_conflicting:
             try:
                 deprint(_(u"%s attribute of %s record (maybe named: %s) importing from %s referenced an unloaded object (probably %s) - value skipped") % (attr, self.fid, self.full, self.GetParentMod().GName, value))
-            except: #a record type that doesn't have a full chunk:
+            except Exception: #a record type that doesn't have a full chunk:
                 deprint(_(u"%s attribute of %s record importing from %s referenced an unloaded object (probably %s) - value skipped") % (attr, self.fid, self.GetParentMod().GName, value))
             del conflicting[attr]
 
