@@ -116,7 +116,7 @@ try: # Python27\Lib\site-packages\win32comext\shell
             flags |= shellcon.FOF_NOCONFIRMMKDIR
             pfo = _initialize_com(flags)
             # Set the destination paths. If they do not exist we need below
-            ctx = pythoncom.CreateBindCtx()
+            # ctx = pythoncom.CreateBindCtx()
             # ifile_system_bind_data = pythoncom.CoCreateInstance(
             #     shell.CLSID_FileOperation, None,
             #                                  # CLSCTX_INPROC_HANDLER does not work
@@ -125,7 +125,7 @@ try: # Python27\Lib\site-packages\win32comext\shell
             oper = pfo.CopyItem if do_copy else pfo.MoveItem
             for s, d in zip(src, dst):
                 d = shell.SHCreateItemFromParsingName(
-                    d, ctx, shell.IID_IShellItem) # BLOWS HERE
+                    d, None, shell.IID_IShellItem) # BLOWS HERE
                 s = shell.SHCreateItemFromParsingName(
                     s, None, shell.IID_IShellItem)
                 oper(s, d) # Schedule an operation to be performed
@@ -162,6 +162,14 @@ try: # Python27\Lib\site-packages\win32comext\shell
                 item = shell.SHCreateItemFromParsingName(f, None,
                                                          shell.IID_IShellItem)
                 pfo.DeleteItem(item) # Schedule an operation to be performed
+            return _execute(pfo)
+
+        def rename(src, dest):
+            pfo = _initialize_com(shellcon.FOF_NOCONFIRMATION)
+            for s in src:
+                item = shell.SHCreateItemFromParsingName(s, None,
+                                                         shell.IID_IShellItem)
+                pfo.RenameItem(item, dest) # None for the sink !!!
             return _execute(pfo)
 
         def _execute(pfo):
@@ -207,6 +215,9 @@ except ImportError:
         path = reEnv.sub(subEnv, path)
         return path
 
+rename([ur'C:\Dropbox\eclipse_workspaces\python\wrye-bash\Mopy\LALALALA.log'],
+        ur'C:\Dropbox\eclipse_workspaces\python\wrye-bash\Mopy\LALALA.log'
+       ) # rename succeeds but error 0x80070057 the parameter is incorrect is thrown
 try:
     import win32com.client as win32client
 except ImportError:
