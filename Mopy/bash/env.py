@@ -98,31 +98,34 @@ try: # Python27\Lib\site-packages\win32comext\shell
     try:
         import pythoncom
 
-        def copy_or_move(src, dst, do_copy, flags=shellcon.FOF_NOCONFIRMATION):
+        def copy_or_move(src, dst, do_copy, flags):
             """@see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
             for flags available"""
             # @see IFileOperation
             pfo = pythoncom.CoCreateInstance(shell.CLSID_FileOperation, None,
                                              pythoncom.CLSCTX_ALL,
                                              shell.IID_IFileOperation)
+            # Do not confirm the creation of a new folder if the operation requires one to be created
+            flags |= shellcon.FOF_NOCONFIRMMKDIR
             # @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
             pfo.SetOperationFlags(flags)
             # Set the destination folder
-            dst = shell.SHCreateItemFromParsingName(dst, None,
-                                                    shell.IID_IShellItem)
-            if type(src) not in (tuple, list):
-                src = (src,)
-            for f in src:
+            if len(dst) == 1 and len(src) != 1:
+                dest = shell.SHCreateItemFromParsingName(dst[0], None,
+                                                         shell.IID_IShellItem)
+                dst = [dest] * len(src)
+            oper = pfo.CopyItem if do_copy else pfo.MoveItem
+            for f in zip(src, dst):
                 item = shell.SHCreateItemFromParsingName(f, None,
                                                          shell.IID_IShellItem)
-                pfo.CopyItem(item, dst) # Schedule an operation to be performed
+                oper(item, dst) # Schedule an operation to be performed
             # @see http://msdn.microsoft.com/en-us/library/bb775780(v=vs.85).aspx
             success = pfo.PerformOperations()
             # @see sdn.microsoft.com/en-us/library/bb775769(v=vs.85).aspx
             aborted = pfo.GetAnyOperationsAborted()
             return success is None and not aborted
 
-        def copy(src, dst, flags=shellcon.FOF_NOCONFIRMATION):
+        def copy(src, dst, flags):
             """ Copy files using the built in Windows File copy dialog
 
             Requires absolute paths. Does NOT create root destination folder if
@@ -158,7 +161,7 @@ try: # Python27\Lib\site-packages\win32comext\shell
             pfo.SetOperationFlags(flags)
 
             if type(path) not in (tuple, list):
-                src = (path,)
+                path = (path,)
 
             for f in path:
                 item = shell.SHCreateItemFromParsingName(f, None,
@@ -512,17 +515,17 @@ def _fileOperation(operation, source, target=None, allowUndo=True,
     abspath = _os.path.abspath
     # source may be anything - see SHFILEOPSTRUCT - accepts list or item
     if isinstance(source, (Path, basestring)):
-        source = [GPath(abspath(GPath(source).s))]
+        source = [abspath(GPath(source).s)]
     else:
-        source = [GPath(abspath(GPath(x).s)) for x in source]
+        source = [abspath(GPath(x).s) for x in source]
     # target may be anything ...
     target = target if target else u'' # abspath(u''): cwd (can be Game/Data)
     if isinstance(target, (Path, basestring)):
-        target = [GPath(abspath(GPath(target).s))]
+        target = [(abspath(GPath(target).s))]
     else:
-        target = [GPath(abspath(GPath(x).s)) for x in target]
+        target = [(abspath(GPath(x).s)) for x in target]
     if shell is not None:
-        flags = SHFileOperation_Flags_XXX(allowUndo, confirm, renameOnCollision, silent)
+        flags = __flags(allowUndo, confirm, renameOnCollision, silent)
         aborted, mapping, result, source, target = SHFileOperation_XXX(
             operation, parent, source, target, flags)
         if result == 0:
@@ -568,8 +571,8 @@ def SHFileOperation_XXX(operation, parent, source, target, flags):
     flags |= shellcon.FOF_WANTMAPPINGHANDLE # enables mapping return value !
     flags |= (len(target) > 1) * shellcon.FOF_MULTIDESTFILES
     # null terminated strings
-    source = u'\x00'.join(x.s for x in source)
-    target = u'\x00'.join(x.s for x in target)
+    source = u'\x00'.join(x for x in source) ##: + u'\x00' ??
+    target = u'\x00'.join(x for x in target)
     # get the handle to parent window to feed to win api
     parent = parent.GetHandle() if parent else None
     # See SHFILEOPSTRUCT for deciphering return values

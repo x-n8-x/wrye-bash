@@ -271,6 +271,7 @@ def dump_environment():
     print u"filesystem encoding: %s" % fse, (
         (u' - using %s' % bolt.Path.sys_fs_enc) if not fse else u'')
     print u'User is %sadmin' % (u'' if env.isUserAdmin() else u'not ',)
+    if env.pythoncom: print u'Using IFileOperation'
 
 # Main ------------------------------------------------------------------------
 def main():
