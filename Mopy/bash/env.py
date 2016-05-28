@@ -19,7 +19,8 @@
 #
 #  Wrye Bash copyright (C) 2005-2009 Wrye, 2010-2015 Wrye Bash Team
 #  https://github.com/wrye-bash
-#
+#  isUserAdmin (C) COPYRIGHT © Preston Landers 2010
+#  Released under the same license as Python 2.6.5
 # =============================================================================
 
 """WIP module to encapsulate environment access - currently OS dependent stuff.
@@ -38,6 +39,23 @@ try:
     import win32gui
 except ImportError: # linux
     win32gui = None
+
+def isUserAdmin():
+    if _os.name == 'nt':
+        import ctypes
+        # WARNING: requires Windows XP SP2 or higher!
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            deprint("Admin check failed, assuming not an admin.",
+                    traceback=True)
+            return False
+    elif _os.name == 'posix':
+        # Check for root on Posix
+        return _os.getuid() == 0
+    else:
+        raise NotImplementedError, \
+            "Unsupported operating system for this module: %s" % (_os.name, )
 
 def get_game_path(submod):
     """Check registry supplied game paths for the game.exe."""
