@@ -80,12 +80,104 @@ def get_game_path(submod):
 try: # Python27\Lib\site-packages\win32comext\shell
     from win32com.shell import shell, shellcon
     from win32com.shell.shellcon import FO_DELETE, FO_MOVE, FO_COPY, FO_RENAME
+    import pythoncom
+    from win32com.shell import shell, shellcon
 
     def _getShellPath(shellKey):
         path = shell.SHGetFolderPath(0, shellKey, None, 0)
         return path
+
+    def __flags(allowUndo, confirm, renameOnCollision, silent):
+        flags = 0
+        if allowUndo: flags |= shellcon.FOF_ALLOWUNDO
+        if not confirm: flags |= shellcon.FOF_NOCONFIRMATION
+        if renameOnCollision: flags |= shellcon.FOF_RENAMEONCOLLISION
+        if silent: flags |= shellcon.FOF_SILENT
+        return flags
+
+    try:
+        import pythoncom
+
+        def copy_or_move(src, dst, do_copy, flags=shellcon.FOF_NOCONFIRMATION):
+            """@see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
+            for flags available"""
+            # @see IFileOperation
+            pfo = pythoncom.CoCreateInstance(shell.CLSID_FileOperation, None,
+                                             pythoncom.CLSCTX_ALL,
+                                             shell.IID_IFileOperation)
+            # @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
+            pfo.SetOperationFlags(flags)
+            # Set the destination folder
+            dst = shell.SHCreateItemFromParsingName(dst, None,
+                                                    shell.IID_IShellItem)
+            if type(src) not in (tuple, list):
+                src = (src,)
+            for f in src:
+                item = shell.SHCreateItemFromParsingName(f, None,
+                                                         shell.IID_IShellItem)
+                pfo.CopyItem(item, dst) # Schedule an operation to be performed
+            # @see http://msdn.microsoft.com/en-us/library/bb775780(v=vs.85).aspx
+            success = pfo.PerformOperations()
+            # @see sdn.microsoft.com/en-us/library/bb775769(v=vs.85).aspx
+            aborted = pfo.GetAnyOperationsAborted()
+            return success is None and not aborted
+
+        def copy(src, dst, flags=shellcon.FOF_NOCONFIRMATION):
+            """ Copy files using the built in Windows File copy dialog
+
+            Requires absolute paths. Does NOT create root destination folder if
+            it doesn't exist.
+            Overwrites and is recursive by default
+            """
+            return copy_or_move(src, dst, do_copy=True, flags=flags)
+
+        def move(src, dst, flags=shellcon.FOF_NOCONFIRMATION):
+            """ Move files using the built in Windows File copy dialog
+
+            Requires absolute paths. Does NOT create root destination folder if
+            it doesn't exist.
+            @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
+            for flags available
+            """
+            return copy_or_move(src, dst, do_copy=False, flags=flags)
+
+        def delete(path, flags=shellcon.FOF_NOCONFIRMATION):
+            """ Delete files using the built in Windows File copy dialog
+
+            Requires absolute paths.
+            @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
+            for flags available
+            """
+            # @see IFileOperation
+            pfo = pythoncom.CoCreateInstance(shell.CLSID_FileOperation, None,
+                                             pythoncom.CLSCTX_ALL,
+                                             shell.IID_IFileOperation)
+
+            # Respond with Yes to All for any dialog
+            # @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
+            pfo.SetOperationFlags(flags)
+
+            if type(path) not in (tuple, list):
+                src = (path,)
+
+            for f in path:
+                item = shell.SHCreateItemFromParsingName(f, None,
+                                                         shell.IID_IShellItem)
+                pfo.DeleteItem(item) # Schedule an operation to be performed
+
+            # @see http://msdn.microsoft.com/en-us/library/bb775780(
+            # v=vs.85).aspx
+            success = pfo.PerformOperations()
+
+            # @see sdn.microsoft.com/en-us/library/bb775769(v=vs.85).aspx
+            aborted = pfo.GetAnyOperationsAborted()
+            return success is None and not aborted
+
+    except ImportError:
+        pythoncom = None
+
 except ImportError:
-    shell = shellcon = None
+    shell = shellcon = pythoncom =  None
     FO_MOVE = 1
     FO_COPY = 2
     FO_DELETE = 3
@@ -430,24 +522,9 @@ def _fileOperation(operation, source, target=None, allowUndo=True,
     else:
         target = [GPath(abspath(GPath(x).s)) for x in target]
     if shell is not None:
-        # flags
-        flags = shellcon.FOF_WANTMAPPINGHANDLE # enables mapping return value !
-        flags |= (len(target) > 1) * shellcon.FOF_MULTIDESTFILES
-        if allowUndo: flags |= shellcon.FOF_ALLOWUNDO
-        if not confirm: flags |= shellcon.FOF_NOCONFIRMATION
-        if renameOnCollision: flags |= shellcon.FOF_RENAMEONCOLLISION
-        if silent: flags |= shellcon.FOF_SILENT
-        # null terminated strings
-        source = u'\x00'.join(x.s for x in source)
-        target = u'\x00'.join(x.s for x in target)
-        # get the handle to parent window to feed to win api
-        parent = parent.GetHandle() if parent else None
-        # See SHFILEOPSTRUCT for deciphering return values
-        # result: a windows error code (or 0 for success)
-        # aborted: True if any operations aborted, False otherwise
-        # mapping: maps the old and new names of the renamed files
-        result, aborted, mapping = shell.SHFileOperation(
-                (parent, operation, source, target, flags, None, None))
+        flags = SHFileOperation_Flags_XXX(allowUndo, confirm, renameOnCollision, silent)
+        aborted, mapping, result, source, target = SHFileOperation_XXX(
+            operation, parent, source, target, flags)
         if result == 0:
             if aborted: raise SkipError()
             return dict(mapping)
@@ -485,6 +562,23 @@ def _fileOperation(operation, source, target=None, allowUndo=True,
         # silent - no real effect, since we're not showing visuals
         return __copyOrMove(operation, source, target, renameOnCollision,
                             parent)
+
+def SHFileOperation_XXX(operation, parent, source, target, flags):
+    # flags
+    flags |= shellcon.FOF_WANTMAPPINGHANDLE # enables mapping return value !
+    flags |= (len(target) > 1) * shellcon.FOF_MULTIDESTFILES
+    # null terminated strings
+    source = u'\x00'.join(x.s for x in source)
+    target = u'\x00'.join(x.s for x in target)
+    # get the handle to parent window to feed to win api
+    parent = parent.GetHandle() if parent else None
+    # See SHFILEOPSTRUCT for deciphering return values
+    # result: a windows error code (or 0 for success)
+    # aborted: True if any operations aborted, False otherwise
+    # mapping: maps the old and new names of the renamed files
+    result, aborted, mapping = shell.SHFileOperation(
+        (parent, operation, source, target, flags, None, None))
+    return aborted, mapping, result, source, target
 
 def shellDelete(files, parent=None, confirm=False, recycle=False):
     try:
