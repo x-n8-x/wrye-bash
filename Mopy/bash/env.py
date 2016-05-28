@@ -97,33 +97,39 @@ try: # Python27\Lib\site-packages\win32comext\shell
 
     try:
         import pythoncom
+        IFileOperation = shell.IID_IFileOperation # AttributeError on pywin 218
+
+        def _initialize_com(flags):
+            # @see IFileOperation
+            pfo = pythoncom.CoCreateInstance(shell.CLSID_FileOperation, None,
+                                             # CLSCTX_INPROC_HANDLER does not work, CLSCTX_ALL does
+                                             pythoncom.CLSCTX_INPROC_SERVER ,
+                                             IFileOperation)
+            # @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
+            pfo.SetOperationFlags(flags)
+            return pfo
 
         def copy_or_move(src, dst, do_copy, flags):
             """@see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
             for flags available"""
-            # @see IFileOperation
-            pfo = pythoncom.CoCreateInstance(shell.CLSID_FileOperation, None,
-                                             pythoncom.CLSCTX_ALL,
-                                             shell.IID_IFileOperation)
             # Do not confirm the creation of a new folder if the operation requires one to be created
             flags |= shellcon.FOF_NOCONFIRMMKDIR
-            # @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
-            pfo.SetOperationFlags(flags)
-            # Set the destination folder
-            if len(dst) == 1 and len(src) != 1:
-                dest = shell.SHCreateItemFromParsingName(dst[0], None,
-                                                         shell.IID_IShellItem)
-                dst = [dest] * len(src)
+            pfo = _initialize_com(flags)
+            # Set the destination paths. If they do not exist we need below
+            ctx = pythoncom.CreateBindCtx()
+            # ifile_system_bind_data = pythoncom.CoCreateInstance(
+            #     shell.CLSID_FileOperation, None,
+            #                                  # CLSCTX_INPROC_HANDLER does not work
+            #                                  pythoncom.CLSCTX_INPROC_SERVER ,
+            #                                  shell.IID_IFileSystemBindData)
             oper = pfo.CopyItem if do_copy else pfo.MoveItem
-            for f in zip(src, dst):
-                item = shell.SHCreateItemFromParsingName(f, None,
-                                                         shell.IID_IShellItem)
-                oper(item, dst) # Schedule an operation to be performed
-            # @see http://msdn.microsoft.com/en-us/library/bb775780(v=vs.85).aspx
-            success = pfo.PerformOperations()
-            # @see sdn.microsoft.com/en-us/library/bb775769(v=vs.85).aspx
-            aborted = pfo.GetAnyOperationsAborted()
-            return success is None and not aborted
+            for s, d in zip(src, dst):
+                d = shell.SHCreateItemFromParsingName(
+                    d, ctx, shell.IID_IShellItem) # BLOWS HERE
+                s = shell.SHCreateItemFromParsingName(
+                    s, None, shell.IID_IShellItem)
+                oper(s, d) # Schedule an operation to be performed
+            return _execute(pfo)
 
         def copy(src, dst, flags):
             """ Copy files using the built in Windows File copy dialog
@@ -134,7 +140,7 @@ try: # Python27\Lib\site-packages\win32comext\shell
             """
             return copy_or_move(src, dst, do_copy=True, flags=flags)
 
-        def move(src, dst, flags=shellcon.FOF_NOCONFIRMATION):
+        def move(src, dst, flags):
             """ Move files using the built in Windows File copy dialog
 
             Requires absolute paths. Does NOT create root destination folder if
@@ -144,39 +150,28 @@ try: # Python27\Lib\site-packages\win32comext\shell
             """
             return copy_or_move(src, dst, do_copy=False, flags=flags)
 
-        def delete(path, flags=shellcon.FOF_NOCONFIRMATION):
+        def delete(path, flags):
             """ Delete files using the built in Windows File copy dialog
 
             Requires absolute paths.
             @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
             for flags available
             """
-            # @see IFileOperation
-            pfo = pythoncom.CoCreateInstance(shell.CLSID_FileOperation, None,
-                                             pythoncom.CLSCTX_ALL,
-                                             shell.IID_IFileOperation)
-
-            # Respond with Yes to All for any dialog
-            # @see http://msdn.microsoft.com/en-us/library/bb775799(v=vs.85).aspx
-            pfo.SetOperationFlags(flags)
-
-            if type(path) not in (tuple, list):
-                path = (path,)
-
+            pfo = _initialize_com(flags)
             for f in path:
                 item = shell.SHCreateItemFromParsingName(f, None,
                                                          shell.IID_IShellItem)
                 pfo.DeleteItem(item) # Schedule an operation to be performed
+            return _execute(pfo)
 
-            # @see http://msdn.microsoft.com/en-us/library/bb775780(
-            # v=vs.85).aspx
+        def _execute(pfo):
+            # @see http://msdn.microsoft.com/en-us/library/bb775780(v=vs.85).aspx
             success = pfo.PerformOperations()
-
             # @see sdn.microsoft.com/en-us/library/bb775769(v=vs.85).aspx
             aborted = pfo.GetAnyOperationsAborted()
-            return success is None and not aborted
+            return success, aborted
 
-    except ImportError:
+    except (ImportError, AttributeError):
         pythoncom = None
 
 except ImportError:
@@ -512,22 +507,26 @@ def _fileOperation(operation, source, target=None, allowUndo=True,
     """
     if not source:
         return {}
+    if isinstance(source, (Path, basestring)): source = [source]
+    if isinstance(target, (Path, basestring)): target = [target]
     abspath = _os.path.abspath
-    # source may be anything - see SHFILEOPSTRUCT - accepts list or item
-    if isinstance(source, (Path, basestring)):
-        source = [abspath(GPath(source).s)]
-    else:
-        source = [abspath(GPath(x).s) for x in source]
-    # target may be anything ...
-    target = target if target else u'' # abspath(u''): cwd (can be Game/Data)
-    if isinstance(target, (Path, basestring)):
-        target = [(abspath(GPath(target).s))]
-    else:
-        target = [(abspath(GPath(x).s)) for x in target]
     if shell is not None:
+        # Make source/target lists of absolute unicode paths
+        source = [abspath(GPath(x).s) for x in source]
+        target = [abspath(GPath(x).s) for x in target]
         flags = __flags(allowUndo, confirm, renameOnCollision, silent)
-        aborted, mapping, result, source, target = SHFileOperation_XXX(
-            operation, parent, source, target, flags)
+        if pythoncom:
+            mapping = {}
+            if operation is FO_DELETE:
+                result, aborted = delete(source, flags)
+            else:
+                result, aborted = copy_or_move(source, target,
+                                               do_copy=operation is FO_COPY,
+                                               flags=flags)
+        else: # YAK !
+            result, aborted, mapping = SHFileOperation_XXX(parent, operation,
+                                                           source, target,
+                                                           flags)
         if result == 0:
             if aborted: raise SkipError()
             return dict(mapping)
@@ -536,10 +535,12 @@ def _fileOperation(operation, source, target=None, allowUndo=True,
             return dict(mapping)
         else:
             if result == 124:
-                raise _InvalidPathsError(source.replace(u'\x00', u'\n'),
-                                         target.replace(u'\x00', u'\n'))
+                raise _InvalidPathsError(u'\n'.join(source),
+                                         u'\n'.join(target))
             raise FileOperationErrorMap.get(result, FileOperationError(result))
     else: # Use custom dialogs and such
+        source = [GPath(abspath(GPath(x).s)) for x in source]
+        target = [GPath(abspath(GPath(x).s)) for x in target]
         import balt # TODO(ut): local import, env should be above balt...
         if operation == FO_DELETE:
             # allowUndo - no effect, can't use recycle bin this way
@@ -566,13 +567,13 @@ def _fileOperation(operation, source, target=None, allowUndo=True,
         return __copyOrMove(operation, source, target, renameOnCollision,
                             parent)
 
-def SHFileOperation_XXX(operation, parent, source, target, flags):
+def SHFileOperation_XXX(parent, operation, source, target, flags):
     # flags
     flags |= shellcon.FOF_WANTMAPPINGHANDLE # enables mapping return value !
     flags |= (len(target) > 1) * shellcon.FOF_MULTIDESTFILES
     # null terminated strings
-    source = u'\x00'.join(x for x in source) ##: + u'\x00' ??
-    target = u'\x00'.join(x for x in target)
+    source = u'\x00'.join(source) ##: + u'\x00' ??
+    target = u'\x00'.join(target)
     # get the handle to parent window to feed to win api
     parent = parent.GetHandle() if parent else None
     # See SHFILEOPSTRUCT for deciphering return values
@@ -581,7 +582,7 @@ def SHFileOperation_XXX(operation, parent, source, target, flags):
     # mapping: maps the old and new names of the renamed files
     result, aborted, mapping = shell.SHFileOperation(
         (parent, operation, source, target, flags, None, None))
-    return aborted, mapping, result, source, target
+    return aborted, mapping, result
 
 def shellDelete(files, parent=None, confirm=False, recycle=False):
     try:
