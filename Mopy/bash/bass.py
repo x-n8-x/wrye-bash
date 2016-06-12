@@ -69,3 +69,19 @@ settings = None # bolt.Settings !
 
 # mod extension regex - used all over
 reModExt = _re.compile(ur'\.es[mp](.ghost)?$', _re.I | _re.U)
+
+# Import wx once and for all
+
+WXVER = '3.0.2.0'
+import wxversion
+
+if wxversion.checkInstalled(WXVER):
+    wxversion.select(WXVER)
+    versionOK = True
+else:
+    versionOK = False
+
+try:
+    import wx
+except ImportError:
+    wx = None

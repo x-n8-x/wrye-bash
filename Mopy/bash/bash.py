@@ -42,7 +42,7 @@ import bolt
 from bolt import GPath
 import env
 basher = balt = barb =  None
-
+from bass import wx
 #------------------------------------------------------------------------------
 def SetHomePath(homePath):
     drive,path = os.path.splitdrive(homePath)
@@ -134,13 +134,12 @@ def oneInstanceChecker():
                     buttons=[(True,'ok')],
                     )
             else:
-                try:
-                    import wx
+                if wx is not None:
                     _app = wx.App(False)
                     with wx.MessageDialog(None, msg, _(u'Wrye Bash'),
                                           wx.ID_OK) as dialog:
                         dialog.ShowModal()
-                except ImportError as e:
+                else:
                     print 'error: %r' % e
                     import Tkinter
                     root = Tkinter.Tk()
@@ -258,10 +257,9 @@ def dump_environment():
     print u"Using Wrye Bash Version", bass.AppVersion
     print u"Python version: %d.%d.%d" % (
         sys.version_info[0],sys.version_info[1],sys.version_info[2])
-    try:
-        import wx
+    if wx is not None:
         print u"wxPython version: %s" % wx.version()
-    except ImportError:
+    else:
         print u"wxPython not found"
     # Standalone: stdout will actually be pointing to stderr, which has no
     # 'encoding' attribute
@@ -324,11 +322,11 @@ def main():
                 msgtext += _(
                     u'To prevent this message in the future, use the -g '
                     u'command line argument to specify the game')
-            try:
+            if wx is not None:
                 # First try using wxPython
                 # raise BoltError("TEST TINKER")
                 retCode = _wxSelectGame(ret, msgtext)
-            except:
+            else:
                 # No good with wxPython, use Tkinter instead ##: what use ?
                 retCode = _tinkerSelectGame(ret, msgtext)
             if retCode is None:
@@ -474,7 +472,6 @@ def _showErrorInAnyGui(msg):
     if hasattr(sys, 'frozen'):
         # WBSA we've disabled TKinter, since it's not required, use wx
         # here instead
-        import wx
 
         class ErrorMessage(wx.Frame):
             def __init__(self):
@@ -525,7 +522,6 @@ class _AppReturnCode(object):
     def set(self, value): self.value = value
 
 def _wxSelectGame(ret, msgtext):
-    import wx
 
     class GameSelect(wx.Frame):
         def __init__(self, gameNames, callback):
@@ -611,8 +607,8 @@ def _tinkerSelectGame(ret, msgtext):
 
 # Version checks --------------------------------------------------------------
 def _rightWxVersion():
+    if wx is None: return False
     run = True
-    import wx
 
     wxver = wx.version()
     if not u'unicode' in wxver.lower() and not u'2.9' in wxver:
