@@ -397,8 +397,7 @@ def main():
     else:
         app = basher.BashApp()
 
-    if not hasattr(sys, 'frozen') and (
-        not _rightWxVersion() or not _rightPythonVersion()): return
+    if not hasattr(sys, 'frozen') and not _rightPythonVersion(): return
 
     # process backup/restore options
     # quit if either is true, but only after calling both
@@ -606,23 +605,6 @@ def _tinkerSelectGame(ret, msgtext):
     return retCode.get()
 
 # Version checks --------------------------------------------------------------
-def _rightWxVersion():
-    if wx is None: return False
-    run = True
-
-    wxver = wx.version()
-    if not u'unicode' in wxver.lower() and not u'2.9' in wxver:
-        # Can't use translatable strings, because they'd most likely end up
-        # being in unicode!
-        run = balt.askYes(None,
-                          'Warning: you appear to be using a non-unicode '
-                          'version of wxPython (%s).  This will cause '
-                          'problems!  It is highly recommended you use a '
-                          'unicode version of wxPython instead.  Do you '
-                          'still want to run Wrye Bash?' % wxver,
-                          'Warning: Non-Unicode wxPython detected', )
-    return run
-
 def _rightPythonVersion():
     sysVersion = sys.version_info[:3]
     if sysVersion < (2, 7) or sysVersion >= (3,):
