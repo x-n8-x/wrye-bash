@@ -1,0 +1,3 @@
+[submodule "Mopy/bash/compiled"]
+	path = Mopy/bash/compiled
+	url = git@github.com:wrye-bash/compiled.git
