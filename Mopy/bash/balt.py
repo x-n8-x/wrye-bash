@@ -2316,7 +2316,7 @@ class ItemLink(Link):
     override help. Registers the Execute() and ShowHelp methods on menu events.
     """
     kind = wx.ITEM_NORMAL  # the default in wx.MenuItem(... kind=...)
-    help = None
+    # help = None
 
     def AppendToMenu(self, menu, window, selection):
         """Append self as menu item and set callbacks to be executed when
@@ -2324,8 +2324,13 @@ class ItemLink(Link):
         super(ItemLink, self).AppendToMenu(menu, window, selection)
         Link.Frame.Bind(wx.EVT_MENU, self.__Execute, id=self._id)
         Link.Frame.Bind(wx.EVT_MENU_HIGHLIGHT_ALL, ItemLink.ShowHelp)
-        menuItem = wx.MenuItem(menu, self._id, self.text, self.help or u'',
-                               self.__class__.kind)
+        try:
+            menuItem = wx.MenuItem(menu, self._id, self.text, self.help,
+                                   self.__class__.kind)
+        except AttributeError:
+            deprint(self.__class__.__name__ + u' is missing help')
+            menuItem = wx.MenuItem(menu, self._id, self.text, u'',
+                                   self.__class__.kind)
         menu.AppendItem(menuItem)
         return menuItem
 
