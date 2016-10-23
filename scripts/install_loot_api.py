@@ -9,7 +9,7 @@ import urllib
 import _winreg
 
 try:
-    sys.path.append('../Mopy/bash/compiled')
+    sys.path.append('Mopy/bash/compiled')
     import loot_api
 except ImportError:
     pass
@@ -54,7 +54,7 @@ def isLootApiInstalled(revision):
 def installLootApi(revision):
     url = 'https://bintray.com/wrinklyninja/loot/download_file?file_path=loot_api_python-' + revision + '-win32.7z'
     archivePath = os.path.join(tempfile.gettempdir(), 'archive.7z')
-    compiledPath = os.path.join('..', 'Mopy', 'bash', 'compiled')
+    compiledPath = os.path.join('Mopy', 'bash', 'compiled')
     sevenZipPath = os.path.join(compiledPath, '7z.exe')
 
     print 'Downloading LOOT API Python wrapper from "' + url + '"...'
