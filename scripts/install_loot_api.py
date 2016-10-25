@@ -9,7 +9,7 @@ import urllib
 import _winreg
 
 try:
-    sys.path.append('Mopy/bash/compiled')
+    sys.path.append('Mopy')
     import loot_api
 except ImportError:
     pass
@@ -51,17 +51,16 @@ def isLootApiInstalled(revision):
     return ('loot_api' in sys.modules
         and loot_api.WrapperVersion.revision == revision)
 
-def installLootApi(revision):
+def installLootApi(revision, destinationPath):
     url = 'https://bintray.com/wrinklyninja/loot/download_file?file_path=loot_api_python-' + revision + '-win32.7z'
     archivePath = os.path.join(tempfile.gettempdir(), 'archive.7z')
-    compiledPath = os.path.join('Mopy', 'bash', 'compiled')
-    sevenZipPath = os.path.join(compiledPath, '7z.exe')
+    sevenZipPath = os.path.join('Mopy', 'bash', 'compiled', '7z.exe')
 
     print 'Downloading LOOT API Python wrapper from "' + url + '"...'
     urllib.urlretrieve(url, archivePath)
 
-    print 'Extracting LOOT API Python wrapper to ' + compiledPath
-    subprocess.call([sevenZipPath, 'e', archivePath, '-y', '-o' + compiledPath, '*/loot_api.dll', '*/loot_api.pyd'])
+    print 'Extracting LOOT API Python wrapper to ' + destinationPath
+    subprocess.call([sevenZipPath, 'e', archivePath, '-y', '-o' + destinationPath, '*/loot_api.dll', '*/loot_api.pyd'])
 
     os.remove(archivePath)
 
@@ -74,4 +73,4 @@ lootApiWrapperRevision = '4faee6b'
 if isLootApiInstalled(lootApiWrapperRevision):
     print 'LOOT API wrapper revision %s is already installed' % lootApiWrapperRevision
 else:
-    installLootApi(lootApiWrapperRevision)
+    installLootApi(lootApiWrapperRevision, 'Mopy')

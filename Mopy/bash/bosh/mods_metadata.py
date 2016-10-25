@@ -33,8 +33,6 @@ from ..brec import ModReader, MreRecord, ModError
 from ..cint import ObBaseRecord, ObCollection
 from ..patcher import getPatchesPath, getPatchesList
 
-sys.path.append('bash/compiled')
-
 try:
     import loot_api
 except ImportError as e:
