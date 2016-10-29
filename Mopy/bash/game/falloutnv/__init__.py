@@ -56,6 +56,13 @@ nexusUrl = u'http://www.nexusmods.com/newvegas/'
 nexusName = u'New Vegas Nexus'
 nexusKey = u'bash.installers.openNewVegasNexus'
 
+# Bsa info
+allow_reset_bsa_timestamps = True
+bsa_extension = ur'bsa'
+
+# Load order info
+using_txt_file = False
+
 #--Garden of Eden Creation Kit information
 class cs:
     shortName = u'GECK'                  # Abbreviated name
