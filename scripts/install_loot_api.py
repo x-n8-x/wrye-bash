@@ -69,7 +69,7 @@ if isMSVCRedistInstalled(14, 0, 24212):
 else:
     installMSVCRedist()
 
-lootApiWrapperRevision = '4faee6b'
+lootApiWrapperRevision = '1.1.1-0-g1fb6502'
 if isLootApiInstalled(lootApiWrapperRevision):
     print 'LOOT API wrapper revision %s is already installed' % lootApiWrapperRevision
 else:

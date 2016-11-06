@@ -22,62 +22,67 @@ import os
 import _winreg
 from collections import OrderedDict
 
-sys.path.append('../Mopy/bash/compiled')
+sys.path.append('Mopy')
 
 import loot_api
 
-games_info = OrderedDict([(u'Oblivion', None), (u'Skyrim', None),
-                          (u'Fallout3', None), (u'FalloutNV', None),
-                          (u'Fallout4', None),
-                          ])
-
-# Detect games.
-for g in games_info:
+def GetGameInstallPath(fsName):
     try:
         reg_key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-            u'Software\\Bethesda Softworks\\%s' % g, 0,
+            u'Software\\Bethesda Softworks\\{}'.format(fsName),
+            0,
             _winreg.KEY_READ | _winreg.KEY_WOW64_32KEY)
     except OSError as e:
-        if e.errno == 2: continue # The system cannot find the file specified
+        if e.errno == 2: return None # The system cannot find the file specified
+
     value = _winreg.QueryValueEx(reg_key, u'Installed Path')
     if value[1] == _winreg.REG_SZ and os.path.exists(value[0]):
-        games_info[g] = value[0]
-        print u'Found %s.' % g
+        return value[0]
+    else:
+        return None
 
+def GetMasterlistPath(lootDataDir, lootFsName):
+    masterlistPath = os.path.join(lootDataDir, lootFsName, 'masterlist.yaml')
+    if os.path.exists(masterlistPath):
+        return masterlistPath
+    else:
+        return None
 
-# Detect LOOT masterlists' installation path in AppData/Local
+print u'Loaded the LOOT API v%s using wrapper version %s' % (loot_api.Version.string(), loot_api.WrapperVersion.string())
+
 localAppData = os.path.join(os.environ["LOCALAPPDATA"], 'LOOT')
 if not os.path.exists(localAppData):
     raise Exception("No LOOT masterlists install found in %s" % localAppData)
 
-# Detect masterlists
-for g, app_dir in games_info.iteritems():
-    if app_dir is not None and os.path.exists(os.path.join(localAppData, g)):
-        games_info[g] = (
-            app_dir, os.path.join(localAppData, g, 'masterlist.yaml'))
+gamesData = [
+    (u'Oblivion', loot_api.GameType.tes4, 'Oblivion'),
+    (u'Skyrim', loot_api.GameType.tes5, 'Skyrim'),
+    (u'Skyrim Special Edition', loot_api.GameType.tes5se, 'SkyrimSE'),
+    (u'Fallout3', loot_api.GameType.fo3, 'Fallout3'),
+    (u'FalloutNV', loot_api.GameType.fonv, 'FalloutNV'),
+    (u'Fallout4', loot_api.GameType.fo4, 'Fallout4'),
+    ]
 
-print u'Loaded the LOOT API v%s using wrapper version %s' % (loot_api.Version.string(), loot_api.WrapperVersion.string())
+for fsName, gameType, lootFsName in gamesData:
+    gameInstallPath = GetGameInstallPath(fsName)
 
-loot_codes = dict(zip(games_info.keys(), (
-    loot_api.GameType.tes4,
-    loot_api.GameType.tes5,
-    loot_api.GameType.fo3,
-    loot_api.GameType.fonv,
-    loot_api.GameType.fo4,
-)))
-
-for game, info in games_info.iteritems():
-    if info is None: continue
-    print u'Getting masterlist from %s' % info[1]
-    taglistDir = u'../Mopy/Bash Patches/%s/taglist.yaml' % game
-    # taglistDir = u'../%s - taglist.yaml' % game
-    if os.path.exists(info[1]):
-        lootDb = loot_api.create_database(loot_codes[game], info[0])
-        lootDb.load_lists(info[1])
-        lootDb.write_minimal_list(taglistDir, True)
-        print u'%s masterlist converted.' % game
+    if gameInstallPath:
+        print u'Found {}'.format(gameInstallPath)
     else:
-        print u'Error: %s masterlist not found.' % game
+        continue
+
+    masterlistPath = GetMasterlistPath(localAppData, lootFsName)
+    taglistDir = u'Mopy/Bash Patches/{}/taglist.yaml'.format(fsName)
+
+    if masterlistPath is None:
+        print u'Error: {} masterlist not found.'.format(fsName)
+        continue
+
+    lootDb = loot_api.create_database(gameType, gameInstallPath)
+    lootDb.load_lists(masterlistPath)
+    lootDb.write_minimal_list(taglistDir, True)
+
+    print u'{} masterlist converted.'.format(fsName)
 
 print u'Taglist generator finished.'
 
