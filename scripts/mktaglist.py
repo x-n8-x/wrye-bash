@@ -22,7 +22,7 @@ import os
 import _winreg
 from collections import OrderedDict
 
-sys.path.append('Mopy')
+sys.path.append(u'Mopy')
 
 import loot_api
 
@@ -41,29 +41,29 @@ def GetGameInstallPath(fsName):
     else:
         return None
 
-def GetMasterlistPath(lootDataDir, lootFsName):
-    masterlistPath = os.path.join(lootDataDir, lootFsName, 'masterlist.yaml')
+def GetMasterlistPath(lootDataDir, gameFolderName):
+    masterlistPath = os.path.join(lootDataDir, gameFolderName, u'masterlist.yaml')
     if os.path.exists(masterlistPath):
         return masterlistPath
     else:
         return None
 
-print u'Loaded the LOOT API v%s using wrapper version %s' % (loot_api.Version.string(), loot_api.WrapperVersion.string())
+print u'Loaded the LOOT API v{0} using wrapper version {1}'.format(loot_api.Version.string(), loot_api.WrapperVersion.string())
 
 localAppData = os.path.join(os.environ["LOCALAPPDATA"], 'LOOT')
 if not os.path.exists(localAppData):
-    raise Exception("No LOOT masterlists install found in %s" % localAppData)
+    raise Exception(u'No LOOT masterlists install found in {}'.format(localAppData))
 
 gamesData = [
-    (u'Oblivion', loot_api.GameType.tes4, 'Oblivion'),
-    (u'Skyrim', loot_api.GameType.tes5, 'Skyrim'),
-    (u'Skyrim Special Edition', loot_api.GameType.tes5se, 'SkyrimSE'),
-    (u'Fallout3', loot_api.GameType.fo3, 'Fallout3'),
-    (u'FalloutNV', loot_api.GameType.fonv, 'FalloutNV'),
-    (u'Fallout4', loot_api.GameType.fo4, 'Fallout4'),
+    (u'Oblivion', loot_api.GameType.tes4),
+    (u'Skyrim', loot_api.GameType.tes5),
+    (u'Skyrim Special Edition', loot_api.GameType.tes5se),
+    (u'Fallout3', loot_api.GameType.fo3),
+    (u'FalloutNV', loot_api.GameType.fonv),
+    (u'Fallout4', loot_api.GameType.fo4),
     ]
 
-for fsName, gameType, lootFsName in gamesData:
+for fsName, gameType in gamesData:
     gameInstallPath = GetGameInstallPath(fsName)
 
     if gameInstallPath:
@@ -71,7 +71,7 @@ for fsName, gameType, lootFsName in gamesData:
     else:
         continue
 
-    masterlistPath = GetMasterlistPath(localAppData, lootFsName)
+    masterlistPath = GetMasterlistPath(localAppData, fsName)
     taglistDir = u'Mopy/Bash Patches/{}/taglist.yaml'.format(fsName)
 
     if masterlistPath is None:

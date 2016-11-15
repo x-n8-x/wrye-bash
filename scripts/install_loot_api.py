@@ -26,7 +26,7 @@ def isMSVCRedistInstalled(majorVersion, minorVersion, buildVersion):
         installedBuildVersion = _winreg.QueryValueEx(keyHandle, 'Bld')[0]
 
         if runtimeInstalled != 0:
-            print 'Found MSVC 2015 redistributable version %s.%s.%s' % (installedMajorVersion, installedMinorVersion, installedBuildVersion)
+            print 'Found MSVC 2015 redistributable version {0}.{1}.{2}'.format(installedMajorVersion, installedMinorVersion, installedBuildVersion)
 
         return (runtimeInstalled != 0
             and installedMajorVersion >= majorVersion
@@ -69,8 +69,8 @@ if isMSVCRedistInstalled(14, 0, 24212):
 else:
     installMSVCRedist()
 
-lootApiWrapperRevision = '1.1.1-0-g1fb6502'
+lootApiWrapperRevision = '1.1.2-0-g0f27192_master'
 if isLootApiInstalled(lootApiWrapperRevision):
-    print 'LOOT API wrapper revision %s is already installed' % lootApiWrapperRevision
+    print 'LOOT API wrapper revision {} is already installed'.format(lootApiWrapperRevision)
 else:
     installLootApi(lootApiWrapperRevision, 'Mopy')
