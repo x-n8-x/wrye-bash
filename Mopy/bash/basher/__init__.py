@@ -4074,6 +4074,11 @@ class BashApp(wx.App):
         #bsaInfos: used in warnTooManyModsBsas() and modInfos strings detection
         bosh.bsaInfos = bosh.BSAInfos()
         bosh.bsaInfos.refresh()
+        deprint(u'Bsas:',
+                u', '.join(u'%s' % x for x in bosh.bsaInfos.iterkeys()))
+        deprint(u'Corrupted bsas:', u', '.join(
+            u'%s' % x for x in bosh.bsaInfos.corrupted.iterkeys())
+            if bosh.bsaInfos.corrupted else u'None')
         progress(0.20, _(u'Initializing ModInfos'))
         bosh.oblivionIni = bosh.gameInis[0]
         bosh.modInfos = bosh.ModInfos()
