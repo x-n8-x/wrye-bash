@@ -49,7 +49,7 @@ class INI_AllowNewLines(BoolLink):
     """Consider INI Tweaks with new lines valid."""
     _text = _(u'Allow Tweaks with New Lines')
     key = 'bash.ini.allowNewLines'
-    help = _(u'Tweak files with new lines are considered valid..')
+    help = _(u'Tweak files with new lines are considered valid.')
 
     def Execute(self):
         super(INI_AllowNewLines, self).Execute()

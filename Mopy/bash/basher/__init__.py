@@ -612,9 +612,12 @@ class INIList(balt.UIList):
             mousetext = _(u'Some settings are changed.')
         elif status == -10:
             # Bad tweak
-            if not settings['bash.ini.allowNewLines']: icon = 20
-            else: icon = 0
-            mousetext = _(u'Tweak is invalid')
+            if not settings['bash.ini.allowNewLines']:
+                icon = 20
+                mousetext = _(u'Tweak is invalid')
+            else:
+                icon = 0
+                mousetext = _(u'Tweak adds new settings')
         if iniInfo.is_default_tweak:
             mousetext = _(u'Default Bash Tweak') + (
                 (u'.  ' + mousetext) if mousetext else u'')
