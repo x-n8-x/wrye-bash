@@ -26,6 +26,7 @@
 """
 import os as _os
 import re as _re
+import stat
 import shutil as _shutil
 from bolt import GPath, BoltError, deprint, CancelError, SkipError, Path, \
     decode
@@ -103,6 +104,22 @@ try:
     import win32com.client as win32client
 except ImportError:
     win32client =None
+
+try:
+    import win32api, win32con
+except ImportError:
+    win32api = win32con = None
+
+# http://techarttiki.blogspot.be/2008/08/read-only-windows-files-with-python.html
+def clear_read_only(filepath):
+    if False:#win32api is not None:
+        fileAtt = win32api.GetFileAttributes(u'%s' % filepath)
+        if fileAtt & win32con.FILE_ATTRIBUTE_READONLY:
+            # File is read-only, so make it writeable
+            win32api.SetFileAttributes(u'%s' % filepath,
+                                       ~win32con.FILE_ATTRIBUTE_READONLY)
+    else: # copied from bolt
+        _os.chmod(u'%s' % filepath, stat.S_IWUSR | stat.S_IWOTH)
 
 def get_personal_path():
     if shell and shellcon:
