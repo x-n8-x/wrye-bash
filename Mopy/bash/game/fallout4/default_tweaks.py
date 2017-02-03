@@ -24,15 +24,12 @@
 from collections import OrderedDict
 
 default_tweaks = {
-    u'Modding, Enabled [Fallout4Prefs].ini': OrderedDict(
-    [(u'Launcher', OrderedDict([(u'bEnableFileSelection', u'1')]))]),
-    u'Modding, Enabled [Fallout4].ini': OrderedDict(
+    u'Modding, Enabled [Fallout4Custom].ini': OrderedDict(
         [(u'Archive', OrderedDict(
-            [(u'sResourceDataDirsFinal',
-              u'STRINGS\\, TEXTURES\\, MUSIC\\, SOUND\\, INTERFACE\\, '
-              u'MESHES\\, PROGRAMS\\, MATERIALS\\, LODSETTINGS\\, VIS\\, '
-              u'MISC\\, SCRIPTS\\, SHADERSFX\\')]))]),
-    u'Modding, ~Default [Fallout4].ini': OrderedDict(
+            [(u'bInvalidateOlderFiles', u'1'),
+             (u'sResourceDataDirsFinal', u'')]))]),
+    u'Modding, Disabled ~Default [Fallout4Custom].ini': OrderedDict(
         [(u'Archive', OrderedDict(
-        [(u'sResourceDataDirsFinal', u'STRINGS\\')]))])
+            [(u'bInvalidateOlderFiles', u'0'),
+             (u'sResourceDataDirsFinal', u'STRINGS\\')]))]),
 }

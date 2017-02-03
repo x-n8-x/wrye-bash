@@ -89,61 +89,20 @@ default_tweaks = {
         [(u'Display', OrderedDict([(u'bAllowScreenShot', u'0')]))]),
     u'Screenshot, Enabled [Skyrim].ini': OrderedDict(
         [(u'Display', OrderedDict([(u'bAllowScreenShot', u'1')]))]),
-    u'Shadows, Res512 Dist 1 [SkyrimPrefs].ini': OrderedDict(
-        [(u'Display', OrderedDict(
-            [(u'fShadowDistance', u'1.0000'), (u'fShadowBiasScale', u'0.6000'),
-             (u'iShadowMapResolutionPrimary', u'1024'),
-             (u'iShadowMapResolutionSecondary', u'512'),
-             (u'fInteriorShadowDistance', u'2000.0000'),
-             (u'iShadowMapResolution', u'512')]))]),
     u'Shadows, Res512 [SkyrimPrefs].ini': OrderedDict(
-        [(u'Display', OrderedDict(
-            [(u'fShadowDistance', u'2000.0000'),
-             (u'fShadowBiasScale', u'0.6000'),
-             (u'iShadowMapResolutionPrimary', u'1024'),
-             (u'iShadowMapResolutionSecondary', u'512'),
-             (u'fInteriorShadowDistance', u'2000.0000'),
-             (u'iShadowMapResolution', u'512')]))]),
-    u'SunShadow, Update 0.0000 [Skyrim].ini': OrderedDict(
-        [(u'Display', OrderedDict(
-            [(u'fSunUpdateThreshold', u'0.0000'),
-             (u'fSunShadowUpdateTime', u'0.0000')]))]),
-    u'SunShadow, Update 0.0500 [Skyrim].ini': OrderedDict(
-        [(u'Display', OrderedDict(
-            [(u'fSunUpdateThreshold', u'0.0500'),
-             (u'fSunShadowUpdateTime', u'0.0000')]))]),
-    u'SunShadow, Update 0.1000 [Skyrim].ini': OrderedDict(
-        [(u'Display', OrderedDict(
-            [(u'fSunUpdateThreshold', u'0.1000'),
-             (u'fSunShadowUpdateTime', u'0.0000')]))]),
-    u'SunShadow, Update 0.2000 [Skyrim].ini': OrderedDict(
-        [(u'Display', OrderedDict(
-            [(u'fSunUpdateThreshold', u'0.2000'),
-             (u'fSunShadowUpdateTime', u'0.0000')]))]),
-    u'Texture Detail, High [SkyrimPrefs].ini': OrderedDict(
-        [(u'Display', OrderedDict([(u'iTexMipMapSkip', u'0')]))]),
-    u'Texture Detail, Low [SkyrimPrefs].ini': OrderedDict(
-        [(u'Display', OrderedDict([(u'iTexMipMapSkip', u'2')]))]),
-    u'Texture Detail, Medium [SkyrimPrefs].ini': OrderedDict(
-        [(u'Display', OrderedDict([(u'iTexMipMapSkip', u'1')]))]),
+        [(u'Display', OrderedDict([(u'iShadowMapResolution', u'512')]))]),
+    u'Shadows, Res1024 [SkyrimPrefs].ini': OrderedDict(
+        [(u'Display', OrderedDict([(u'iShadowMapResolution', u'1024')]))]),
+    u'Shadows, Res2048 [SkyrimPrefs].ini': OrderedDict(
+        [(u'Display', OrderedDict([(u'iShadowMapResolution', u'2048')]))]),
+    u'Shadows, Res4096 [SkyrimPrefs].ini': OrderedDict(
+        [(u'Display', OrderedDict([(u'iShadowMapResolution', u'4096')]))]),
     u'Vanity Camera, 120 ~Default [Skyrim].ini': OrderedDict(
         [(u'Camera', OrderedDict([(u'fAutoVanityModeDelay', u'120.0000')]))]),
     u'Vanity Camera, 600 [Skyrim].ini': OrderedDict(
         [(u'Camera', OrderedDict([(u'fAutoVanityModeDelay', u'600.0000')]))]),
     u'Vanity Camera, Disable [Skyrim].ini': OrderedDict(
         [(u'Camera', OrderedDict([(u'fAutoVanityModeDelay', u'0')]))]),
-    u'WaterReflect, Res1024 [SkyrimPrefs].ini': OrderedDict(
-        [(u'Water', OrderedDict(
-            [(u'iWaterReflectWidth', u'1024'),
-             (u'iWaterReflectHeight', u'1024')]))]),
-    u'WaterReflect, Res256 [SkyrimPrefs].ini': OrderedDict(
-        [(u'Water', OrderedDict(
-            [(u'iWaterReflectWidth', u'256'),
-             (u'iWaterReflectHeight', u'256')]))]),
-    u'WaterReflect, Res512 ~Default[SkyrimPrefs].ini': OrderedDict(
-        [(u'Water', OrderedDict(
-            [(u'iWaterReflectWidth', u'512'),
-             (u'iWaterReflectHeight', u'512')]))]),
     u'Window Mode Top left, 20-225 [Skyrim].ini': OrderedDict(
         [(u'Display', OrderedDict(
             [(u'iLocation Y', u'20'), (u'iLocation X', u'225')]))]),
@@ -152,5 +111,9 @@ default_tweaks = {
             [(u'iLocation Y', u'5'), (u'iLocation X', u'5')]))]),
     u'Window Mode Top left, 5-60 [Skyrim].ini': OrderedDict(
         [(u'Display', OrderedDict(
-            [(u'iLocation Y', u'5'), (u'iLocation X', u'60')]))])
+            [(u'iLocation Y', u'5'), (u'iLocation X', u'60')]))]),
+    u'Invalidate, Allow loose files [Skyrim].ini': OrderedDict(
+        [(u'Archive', OrderedDict([(u'bInvalidateOlderFiles', u'1')]))]),
+    u'Invalidate, Disallow loose files ~Default [Skyrim].ini': OrderedDict(
+        [(u'Archive', OrderedDict([(u'bInvalidateOlderFiles', u'0')]))]),
 }
