@@ -1398,21 +1398,16 @@ class BsaFile:
 #------------------------------------------------------------------------------
 class AFile(object):
     """Abstract file, supports caching - alpha."""
-    _with_ctime = False # HACK ctime may not be needed
+    _file_stat = Path.size_mtime
+    _null_stat = (0, 0)
 
     def __init__(self, abs_path, load_cache=False):
         self._abs_path = GPath(abs_path)
         #--Settings cache
         try:
-            if self._with_ctime:
-                self._file_size, self._file_mod_time, self.ctime = \
-                    self.abs_path.size_mtime_ctime()
-            else:
-                self._file_size, self._file_mod_time = \
-                    self.abs_path.size_mtime()
+            self._reset_cache(self._file_stat(self.abs_path))
         except OSError:
-            self._file_size = self._file_mod_time = 0
-            if self._with_ctime: self.ctime = 0
+            self._reset_cache(self._file_stat(self._null_stat))
 
     @property
     def abs_path(self): return self._abs_path
@@ -1422,23 +1417,19 @@ class AFile(object):
 
     def needs_update(self):
         try:
-            if self._with_ctime:
-                psize, pmtime, pctime = self.abs_path.size_mtime_ctime()
-            else:
-                psize, pmtime = self.abs_path.size_mtime()
+            stat_tuple = self._file_stat(self.abs_path)
         except OSError:
             return False # we should not call needs_update on deleted files
-        if self._file_size != psize or self._file_mod_time != pmtime or (
-            self._with_ctime and self.ctime != pctime):
-            self._reset_cache(psize, pmtime, pctime=(self._with_ctime and
-                                                        pctime) or None)
+        if self._file_changed(stat_tuple):
+            self._reset_cache(stat_tuple)
             return True
         return False
 
-    def _reset_cache(self, psize, pmtime, pctime=None):
-        self._file_size, self._file_mod_time = psize, pmtime
-        if pctime is not None:
-            self.ctime = pctime
+    def _file_changed(self, stat_tuple):
+        return self._file_size, self._file_mod_time != stat_tuple
+
+    def _reset_cache(self, stat_tuple):
+        self._file_size, self._file_mod_time = stat_tuple
 
     def __repr__(self): return self.__class__.__name__ + u"<" + repr(
         self.abs_path.stail) + u">"
@@ -1525,7 +1516,8 @@ class MasterInfo:
 #------------------------------------------------------------------------------
 class FileInfo(AFile):
     """Abstract Mod, Save or BSA File."""
-    _with_ctime = True # HACK ctime may not be needed
+    _file_stat = Path.size_mtime_ctime
+    _null_stat = (0, 0, 0)
 
     def __init__(self, parent_dir, name, load_cache=False):
         self.dir = GPath(parent_dir)
@@ -1537,6 +1529,12 @@ class FileInfo(AFile):
         self.madeBackup = False
         #--Ancillary storage
         self.extras = {}
+
+    def _file_changed(self, stat_tuple):
+        return self._file_size, self._file_mod_time, self.ctime != stat_tuple
+
+    def _reset_cache(self, stat_tuple):
+        self._file_size, self._file_mod_time, self.ctime  = stat_tuple
 
     ##: DEPRECATED-------------------------------------------------------------
     def getPath(self): return self.abs_path
@@ -2060,8 +2058,8 @@ class INIInfo(IniFile):
         super(INIInfo, self).__init__(path)
         self._status = None
 
-    def _reset_cache(self, psize, pmtime, pctime=None):
-        super(INIInfo, self)._reset_cache(psize, pmtime, pctime)
+    def _reset_cache(self, stat_tuple):
+        super(INIInfo, self)._reset_cache(stat_tuple)
         self._status = None
 
     @property
@@ -2194,7 +2192,7 @@ class SaveInfo(_BackupMixin, FileInfo):
     def readHeader(self):
         """Read header from file and set self.header attribute."""
         try:
-            self.header = get_save_header_type(bush.game.fsName)(self.getPath())
+            self.header = get_save_header_type(bush.game.fsName)(self.abs_path)
             #--Master Names/Order
             self.masterNames = tuple(self.header.masters)
             self.masterOrder = tuple() #--Reset to empty for now
@@ -2265,8 +2263,8 @@ class BSAInfo(_BackupMixin, FileInfo, _bsa_type):
         self._reset_bsa_mtime()
         return changed
 
-    def _reset_cache(self, psize, pmtime, pctime=None):
-        super(BSAInfo, self)._reset_cache(pmtime, psize, pctime)
+    def _reset_cache(self, stat_tuple):
+        super(BSAInfo, self)._reset_cache(stat_tuple)
         self._assets = self.__class__._assets
 
     def _reset_bsa_mtime(self):

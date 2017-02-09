@@ -246,7 +246,7 @@ class File_RevertToSnapshot(OneItemLink): # MODS LINK !
             except bolt.FileError:
                 balt.showError(self,_(u'Snapshot file is corrupt!'))
                 self.window.panel.ClearDetails()
-            self.window.RefreshUI(redraw=[fileName], refreshSaves=False) # don't
+            self.window.RefreshUI(redraw=[fileName], refreshSaves=False) # don't ######
             # refresh saves as neither selection state nor load order change
 
 class File_Backup(ItemLink):
