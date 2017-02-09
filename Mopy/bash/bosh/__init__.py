@@ -1405,9 +1405,9 @@ class AFile(object):
         self._abs_path = GPath(abs_path)
         #--Settings cache
         try:
-            self._reset_cache(self._file_stat(self.abs_path))
+            self._reset_cache(self._file_stat(self.abs_path), False)
         except OSError:
-            self._reset_cache(self._file_stat(self._null_stat))
+            self._reset_cache(self._null_stat, False)
 
     @property
     def abs_path(self): return self._abs_path
@@ -1421,14 +1421,14 @@ class AFile(object):
         except OSError:
             return False # we should not call needs_update on deleted files
         if self._file_changed(stat_tuple):
-            self._reset_cache(stat_tuple)
+            self._reset_cache(stat_tuple, False)
             return True
         return False
 
     def _file_changed(self, stat_tuple):
         return self._file_size, self._file_mod_time != stat_tuple
 
-    def _reset_cache(self, stat_tuple):
+    def _reset_cache(self, stat_tuple, load_cache):
         self._file_size, self._file_mod_time = stat_tuple
 
     def __repr__(self): return self.__class__.__name__ + u"<" + repr(
@@ -1533,8 +1533,9 @@ class FileInfo(AFile):
     def _file_changed(self, stat_tuple):
         return self._file_size, self._file_mod_time, self.ctime != stat_tuple
 
-    def _reset_cache(self, stat_tuple):
+    def _reset_cache(self, stat_tuple, load_cache):
         self._file_size, self._file_mod_time, self.ctime  = stat_tuple
+        if load_cache: self.readHeader()
 
     ##: DEPRECATED-------------------------------------------------------------
     def getPath(self): return self.abs_path
@@ -1698,14 +1699,14 @@ reBashTags = re.compile(ur'{{ *BASH *:[^}]*}}\s*\n?',re.U)
 class ModInfo(_BackupMixin, FileInfo):
     """An esp/m file."""
 
-    def __init__(self, parent_dir, name):
+    def __init__(self, parent_dir, name, load_cache=False):
         self.isGhost = endsInGhost = (name.cs[-6:] == u'.ghost')
         if endsInGhost: name = GPath(name.s[:-6])
         else: # refreshFile() path
             absPath = GPath(parent_dir).join(name)
             self.isGhost = \
                 not absPath.exists() and (absPath + u'.ghost').exists()
-        FileInfo.__init__(self, parent_dir, name)
+        super(ModInfo, self).__init__(parent_dir, name, load_cache)
 
     def getFileInfos(self): return modInfos
 
@@ -2058,8 +2059,8 @@ class INIInfo(IniFile):
         super(INIInfo, self).__init__(path)
         self._status = None
 
-    def _reset_cache(self, stat_tuple):
-        super(INIInfo, self)._reset_cache(stat_tuple)
+    def _reset_cache(self, stat_tuple, load_cache):
+        super(INIInfo, self)._reset_cache(stat_tuple, False)
         self._status = None
 
     @property
@@ -2252,7 +2253,7 @@ class BSAInfo(_BackupMixin, FileInfo, _bsa_type):
     _default_mtime = time.mktime(
         time.strptime(u'01-01-2006 00:00:00', u'%m-%d-%Y %H:%M:%S'))
 
-    def __init__(self, parent_dir, bsa_name):
+    def __init__(self, parent_dir, bsa_name, load_cache=False):
         super(BSAInfo, self).__init__(parent_dir, bsa_name)
         self._reset_bsa_mtime()
 
@@ -2263,8 +2264,8 @@ class BSAInfo(_BackupMixin, FileInfo, _bsa_type):
         self._reset_bsa_mtime()
         return changed
 
-    def _reset_cache(self, stat_tuple):
-        super(BSAInfo, self)._reset_cache(stat_tuple)
+    def _reset_cache(self, stat_tuple, load_cache):
+        super(BSAInfo, self)._reset_cache(stat_tuple, False)
         self._assets = self.__class__._assets
 
     def _reset_bsa_mtime(self):
@@ -3667,7 +3668,7 @@ class ModInfos(FileInfos):
         basePath.mtime = baseInfo.mtime
         oldPath.mtime = newInfo.mtime
         if newInfo.isGhost:
-            oldInfo = ModInfo(self.store_dir, oldName)
+            oldInfo = self.factory(self.store_dir, oldName) # type: ModInfo
             oldInfo.setGhost(True)
         self.voCurrent = newVersion
 
