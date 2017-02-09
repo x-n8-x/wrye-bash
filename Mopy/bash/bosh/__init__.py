@@ -2383,7 +2383,7 @@ class TableFileInfos(_DataStore):
         self.table = bolt.Table(
             bolt.PickleDict(self.bash_dir.join(u'Table.dat')))
 
-    def __init__(self, dir_, factory=FileInfo):
+    def __init__(self, dir_, factory=AFile): ## AFile
         """Init with specified directory and specified factory type."""
         self.factory=factory
         self._initDB(dir_)
