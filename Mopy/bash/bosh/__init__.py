@@ -1405,7 +1405,7 @@ class AFile(object):
         self._abs_path = GPath(abs_path)
         #--Settings cache
         try:
-            self._reset_cache(self._file_stat(self.abs_path), False)
+            self._reset_cache(self._file_stat(self.abs_path), load_cache)
         except OSError:
             self._reset_cache(self._null_stat, False)
 
@@ -1421,7 +1421,7 @@ class AFile(object):
         except OSError:
             return False # we should not call needs_update on deleted files
         if self._file_changed(stat_tuple):
-            self._reset_cache(stat_tuple, False)
+            self._reset_cache(stat_tuple, load_cache=True)
             return True
         return False
 
@@ -1429,6 +1429,7 @@ class AFile(object):
         return self._file_size, self._file_mod_time != stat_tuple
 
     def _reset_cache(self, stat_tuple, load_cache):
+        # load_cache used in Mod and SaveInfo to read the header, rest is cheap
         self._file_size, self._file_mod_time = stat_tuple
 
     def __repr__(self): return self.__class__.__name__ + u"<" + repr(
@@ -1522,13 +1523,13 @@ class FileInfo(AFile):
     def __init__(self, parent_dir, name, load_cache=False):
         self.dir = GPath(parent_dir)
         self.name = GPath(name) # ghost must be lopped off
-        super(FileInfo, self).__init__(self.dir.join(name), load_cache)
         self.header = None
         self.masterNames = tuple()
         self.masterOrder = tuple()
         self.madeBackup = False
         #--Ancillary storage
         self.extras = {}
+        super(FileInfo, self).__init__(self.dir.join(name), load_cache)
 
     def _file_changed(self, stat_tuple):
         return self._file_size, self._file_mod_time, self.ctime != stat_tuple
@@ -2253,8 +2254,11 @@ class BSAInfo(_BackupMixin, FileInfo, _bsa_type):
     _default_mtime = time.mktime(
         time.strptime(u'01-01-2006 00:00:00', u'%m-%d-%Y %H:%M:%S'))
 
-    def __init__(self, parent_dir, bsa_name, load_cache=False):
-        super(BSAInfo, self).__init__(parent_dir, bsa_name)
+    def __init__(self, parent_dir, bsa_name, load_cache=True): #load_cache True
+        try:
+            super(BSAInfo, self).__init__(parent_dir, bsa_name, load_cache)
+        except BSAError as e:
+            raise FileError, (GPath(bsa_name), e.message), sys.exc_info()[2]
         self._reset_bsa_mtime()
 
     def getFileInfos(self): return bsaInfos
@@ -2458,9 +2462,9 @@ class FileInfos(TableFileInfos):
     #--Refresh File
     def refreshFile(self,fileName):
         try:
-            fileInfo = self.factory(self.store_dir, fileName)
-            fileInfo.readHeader()
+            fileInfo = self.factory(self.store_dir, fileName, load_cache=True)
             self[fileName] = fileInfo
+            self.corrupted.pop(fileName, None)
         except FileError as error:
             self.corrupted[fileName] = error.message
             self.pop(fileName, None)
@@ -2474,23 +2478,20 @@ class FileInfos(TableFileInfos):
         _updated = set()
         newNames = self._names()
         for name in newNames:
-            oldInfo = self.get(name) # None if name was in corrupted
-            isUpdated = isAdded = False
-            if oldInfo is not None:
-                isUpdated = oldInfo.needs_update()
-            else: # added or known corrupted, get a new info
-                oldInfo = self.factory(self.store_dir, name)
-                isAdded = True
-            if isAdded or isUpdated:
-                try:
-                    oldInfo.readHeader()
-                    self[name] = oldInfo
-                    self.corrupted.pop(name,None)
-                    if isAdded: _added.add(name)
-                    elif isUpdated: _updated.add(name)
-                except FileError as e:
+            oldInfo = self.get(name) # None if name was in corrupted or new one
+            try:
+                if oldInfo is not None:
+                    if oldInfo.needs_update(): # will reread the header
+                        _updated.add(name)
+                else: # added or known corrupted, get a new info
+                    self.refreshFile(name)
+                    _added.add(name)
+            except FileError as e: # old still corrupted, or new(ly) corrupted
+                if not name in self.corrupted \
+                        or self.corrupted[name] != e.message:
+                    deprint(u'Failed to load %s' % name, traceback=True)
                     self.corrupted[name] = e.message
-                    self.pop(name,None)
+                self.pop(name, None)
         _deleted = oldNames - newNames
         self.delete_refresh(_deleted, None, check_existence=False,
                             _in_refresh=True)
@@ -3833,38 +3834,6 @@ class BSAInfos(FileInfos):
 
     @property
     def bash_dir(self): return dirs['modsBash'].join(u'BSA Data')
-
-    def refresh(self, refresh_infos=True):
-        """Refresh from file directory."""
-        oldNames = set(self.data) | set(self.corrupted)
-        _added = set()
-        _updated = set()
-        newNames = self._names()
-        for name in newNames:
-            oldInfo = self.get(name) # None if name was in corrupted or new one
-            isUpdated = isAdded = False
-            try:
-                if oldInfo is not None:
-                    isUpdated = oldInfo.needs_update()
-                else: # added or known corrupted, get a new info
-                    oldInfo = self.factory(self.store_dir, name)
-                    isAdded = True
-                self[name] = oldInfo
-                self.corrupted.pop(name,None)
-                if isAdded: _added.add(name)
-                elif isUpdated: _updated.add(name)
-            except BSAError as e: # old still corrupted, or new(ly) corrupted
-                if not name in self.corrupted \
-                        or self.corrupted[name] != e.message:
-                    deprint(u'Failed to load %s' % name, traceback=True)
-                    self.corrupted[name] = e.message
-                self.pop(name, None)
-        _deleted = oldNames - newNames
-        self.delete_refresh(_deleted, None, check_existence=False,
-                            _in_refresh=True)
-        change = bool(_added) or bool(_updated) or bool(_deleted)
-        if not change: return change
-        return _added, _updated, _deleted
 
 #------------------------------------------------------------------------------
 class PeopleData(_DataStore):
